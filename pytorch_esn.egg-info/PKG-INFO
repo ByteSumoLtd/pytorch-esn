@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: pytorch-esn
+Version: 1.2.4
+Summary: Echo State Network module for PyTorch.
+Home-page: https://github.com/stefanonardo/pytorch-esn
+Author: Stefano Nardo
+Author-email: stefano_nardo@msn.com
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN

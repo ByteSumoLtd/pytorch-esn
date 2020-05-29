@@ -77,9 +77,14 @@ class ESN(nn.Module):
         super(ESN, self).__init__()
 
         self.input_size = input_size
+        #print('input_size', self.input_size)
         self.hidden_size = hidden_size
+        #print('hidden_size', self.hidden_size)
         self.output_size = output_size
+        #print('output size', self.output_size)
         self.num_layers = num_layers
+        #print('num layers', self.num_layers)
+        #print(nonlinearity, nonlinearity)
         if nonlinearity == 'tanh':
             mode = 'RES_TANH'
         elif nonlinearity == 'relu':
@@ -87,7 +92,7 @@ class ESN(nn.Module):
         elif nonlinearity == 'id':
             mode = 'RES_ID'
         else:
-            raise ValueError("Unknown nonlinearity '{}'".format(nonlinearity))
+            raise ValueError("in nn, in EchoStateNetwork, there is an Unknown nonlinearity param:", nonlinearity, " '{}'".format(nonlinearity))
         self.batch_first = batch_first
         self.leaking_rate = leaking_rate
         self.spectral_radius = spectral_radius

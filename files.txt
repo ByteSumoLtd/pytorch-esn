@@ -1,0 +1,9 @@
+/home/andrew/.local/lib/python3.8/site-packages/pytorch_esn-1.2.4-py3.8.egg
+/home/andrew/.local/bin/fn_mackey_glass
+/home/andrew/.local/bin/f2py
+/home/andrew/.local/bin/f2py3
+/home/andrew/.local/bin/f2py3.8
+/home/andrew/.local/bin/convert-caffe2-to-onnx
+/home/andrew/.local/bin/convert-onnx-to-caffe2
+/home/andrew/.local/bin/futurize
+/home/andrew/.local/bin/pasteurize

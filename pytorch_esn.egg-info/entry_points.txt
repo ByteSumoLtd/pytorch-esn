@@ -1,0 +1,4 @@
+
+        [console_scripts]
+        fn_mackey_glass=torchesn.cmdline.fn_mackey_glass:executeESN
+      
