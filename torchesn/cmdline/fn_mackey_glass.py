@@ -19,7 +19,7 @@ import click
 
 @click.command()
 
-@click.option("--data", default="datasets/mg17.csv", help="location of the csv datafile, in the examples/data directory. Default: 'datasets/mg17.csv'")
+@click.option("--dataset", default="datasets/mg17.csv", help="location of the csv datafile, in the examples/data directory. Default: 'datasets/mg17.csv'")
 @click.option("--input_size", default=1, help="size input size data, a univariate timeseries is 1: default 1")     
 @click.option("--hidden_size", default=500, help="size of the hidden reservoir of the ESN: default 500")
 @click.option("--output_size", default=1, help="size input size data, a univariate timeseries is 1: default 1")     
@@ -39,7 +39,7 @@ import click
 @click.option("--header", type = click.BOOL, default=False, help="a switch to print the header record to interpret the results. Default: False")
 # ################# end of command line aurguments to this script
 
-def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, leaking_rate, spectral_radius, nonlinearity, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, seed, device_mode, header, data):
+def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, leaking_rate, spectral_radius, nonlinearity, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, seed, device_mode, header, dataset):
      device = torch.device('cuda')
      dtype = torch.double
      torch.set_default_dtype(dtype)
@@ -66,9 +66,9 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
          
  
      if dtype == torch.double:
-         data = np.loadtxt(data, delimiter=',', dtype=np.float64)
+         data = np.loadtxt(dataset, delimiter=',', dtype=np.float64)
      elif dtype == torch.float:
-         data = np.loadtxt(data, delimiter=',', dtype=np.float32)
+         data = np.loadtxt(dataset, delimiter=',', dtype=np.float32)
      X_data = np.expand_dims(data[:, [0]], axis=1)
      Y_data = np.expand_dims(data[:, [1]], axis=1)
      X_data = torch.from_numpy(X_data).to(device)
@@ -121,10 +121,10 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
 
      if header == True:
           # print the header record, if asked for
-          print("timestamp, publog_train_err, publog_test_err, publog_runtime_sec, hidden_size, output_size, seed, num_layers, nonlinearity, batch_first, leaking_rate, spectral_radius, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps")
+          print("timestamp, publog_train_err, publog_test_err, publog_runtime_sec, hidden_size, output_size, seed, num_layers, nonlinearity, batch_first, leaking_rate, spectral_radius, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, dataset")
      
      # print fitness and parameter data
-     print(start, publog_train_err, publog_test_err, publog_runtime_sec, hidden_size, output_size, num_layers, seed, nonlinearity, batch_first, leaking_rate, spectral_radius, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps ,sep=',') 
+     print(start, publog_train_err, publog_test_err, publog_runtime_sec, hidden_size, output_size, num_layers, seed, nonlinearity, batch_first, leaking_rate, spectral_radius, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, dataset ,sep=',') 
 
     
 
