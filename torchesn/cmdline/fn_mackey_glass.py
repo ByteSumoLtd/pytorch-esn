@@ -20,7 +20,7 @@ import click
 @click.command()
 
 @click.option("--dataset", default="datasets/mg17.csv", help="location of the csv datafile, in the examples/data directory. Default: 'datasets/mg17.csv'")
-@click.option("--input_size", default=1, help="size input size data, a univariate timeseries is 1: default 1")     
+@click.option("--input_size", default=1, help="the size of the input data, a univariate timeseries is 1: default 1")     
 @click.option("--hidden_size", default=500, help="size of the hidden reservoir of the ESN: default 500")
 @click.option("--output_size", default=1, help="size input size data, a univariate timeseries is 1: default 1")     
 @click.option("--num_layers", default=1, help="number of layers in the DeepESN: default 1")
