@@ -8,6 +8,7 @@ This https://github.com/ByteSumoLtd/pytorch-esn fork of the core library, adds t
 
 - examples of running a grid search of mackey-glass hyperparameters
 - conversion of univariate mackey-glass example, into a command line tool for any univariate timeseries having two csv columns 'Input, Target'. The file should not have a header.
+- ability to manually set a seed in the commandline tool, for reproducible results
 
 to do:
 - include a script to use DEAP to evolve good hyperparameters, which calls out to the cmdline tool to execute and determine fitness
