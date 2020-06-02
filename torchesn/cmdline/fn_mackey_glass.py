@@ -66,7 +66,7 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
      def _init_fn():
           np.random.seed(manualSeed)
          
- 
+     # prepare data for training 
      if dtype == torch.double:
          data = np.loadtxt(dataset, delimiter=',', dtype=np.float64)
      elif dtype == torch.float:
@@ -83,13 +83,26 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
 
      washout = [500]
 
-     start = time.time()
-
      # Training
      trY_flat = prepare_target(trY.clone(), [trX.size(0)], washout)
 
-
      loss_fcn = torch.nn.MSELoss()
+
+     # end of data prep.
+     # to do:
+     # it would be good to cache the results of the data prep somewhere on ssd as torch / numpy arrays, on the first run
+     # and on subsequent runs, simply load them, rather than recalculate them each run.
+     # Additionally - it would be good to add in a parameterised sampling strategy here.
+     # so that the evolution uses highly sampled data for early generations, and gradually uses more of the data as evolution progresses
+     # this could help us to reduce the wall clock time of evolution and is an experiment to run later once things work smoothly.
+
+     # training/testing sampling strategy, parameterized on command line
+    
+     # Timer. we start timer once data is prepared. Duration is used as a measure in fn_autotune, as part of the fitness function's multi-objective
+     # evolution, so that we can find high performing, efficient (fast) ESN  models, rather than just bigger models. Time includes training + testing
+     # If you tailor the code to use multiple GPUs of different speeds/types etc, this might need a rethink
+
+     start = time.time()
 
      # call the configured model
      model = ESN(input_size
@@ -114,9 +127,10 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
      model.fit()
      output, hidden = model(trX, washout)
 
+     # here is the loss of the Train error
      publog_train_err = loss_fcn(output, trY[washout[0]:]).item()
 
-     # Test
+     # here is the loss of the Test error, and the duration of the run
      output, hidden = model(tsX, [0], hidden)
      publog_test_err = loss_fcn(output, tsY).item()
      publog_runtime_sec =  time.time() - start
@@ -128,10 +142,12 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
      # print fitness and parameter data
      if auto == True:
           print(publog_test_err, publog_runtime_sec)
+          # build a dict comprehension, for the other data we generally output, convert to json, write to fixed log file, 
+          # so we capture the whole log for an entire evolutionary run if this is called from fn_autotune.
+          # the statistics from the log file could be useful for analysis of the evolution itself.
+
      else:
           print(start, publog_train_err, publog_test_err, publog_runtime_sec, hidden_size, output_size, seed,num_layers, nonlinearity, batch_first, leaking_rate, spectral_radius, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, dataset ,sep=',') 
-
-    
 
 if __name__ == "__main__":
      executeESN()

@@ -18,7 +18,7 @@ import math
 import time
 import subprocess
 import os
-
+import pprint
 
 # Define how to call and evaluate the pytorch-esn function as an genetic
 # Individual, where hyperparamters are considered genes.
@@ -194,6 +194,9 @@ def defineSearch(
                 , toolbox.attr_output_steps     #13
                 , toolbox.attr_cmdline_tool     #14
                 , toolbox.attr_dataset), n=N_CYCLES) #15
+      # mental note: the above index numbers are needed to access these variables from hof, the hall_of_fame best individual evolved by our process
+      # hof includes the whole population, so we set the best_params = hof[0] and then access the tuned values like this:  best_nonlinearity = best_params[5]
+
 
       toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
@@ -219,14 +222,33 @@ def defineSearch(
       stats.register("min", np.min)
       stats.register("max", np.max)
 
+      # just before we start, lets grab the start time, and calc a duration
+      start_time = datetime.datetime.now()
+      print(start_time)
       # this command runs the genetic evolution - and it may take several hours, depending on your params          
       pop, log=algorithms.eaSimple(pop, toolbox, cxpb=crossover_probability, stats=stats,
                                mutpb=mutation_probability, ngen=number_of_generations, halloffame=hof,
                                verbose=True)
 
+      end_time = datetime.datetime.now()
+      print(end_time)
+      # this is a debug line, later when I'm happy everything works, comment it out.
+
+      
+      #print(hof[0])
+
+      pp = pprint.PrettyPrinter(indent=4)  
+      best_params = hof[0]
+      #pp.pprint(hof[0])
 
       # extract optimised parameters from hof, build a dict comprehension to
       # return them.
-      opt_params={'attr_input_size': hof[0], 'attr_output_size': hof[1], 'attr_batch_first': hof[2], 'attr_hidden': hof[3], 'attr_num_layers': hof[4], 'attr_nonlinearity': hof[5], 'attr_leaking_rate': hof[6], 'attr_spectral_radius': hof[7], 'attr_w_io': hof[8], 'attr_w_ih_scale': hof[9], 'attr_lambda_reg': hof[10], 'attr_density': hof[11], 'attr_readout_training': hof[12], 'search_output_steps': hof[13], 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability, 'ea_strategy': ea_strategy}
+      # opt_params={'attr_input_size': hof[0], 'attr_output_size': hof[1], 'attr_batch_first': hof[2], 'attr_hidden': hof[3], 'attr_num_layers': hof[4], 'attr_nonlinearity': hof[5], 'attr_leaking_rate': hof[6], 'attr_spectral_radius': hof[7], 'attr_w_io': hof[8], 'attr_w_ih_scale': hof[9], 'attr_lambda_reg': hof[10], 'attr_density': hof[11], 'attr_readout_training': hof[12], 'search_output_steps': hof[13], 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability}
+
+
+      opt_params={'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 
+ 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'search_output_steps': best_params[13], 'cmdline_tool': cmdline_tool, 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability}
+
+      pp.pprint(opt_params)
 
       return opt_params
