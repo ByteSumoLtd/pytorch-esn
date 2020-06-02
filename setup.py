@@ -13,6 +13,7 @@ setup(name='pytorch-esn',
       entry_points='''
         [console_scripts]
         fn_mackey_glass=torchesn.cmdline.fn_mackey_glass:executeESN
+        fn_autotune=torchesn.cmdline.fn_autotune:tuneESN
       ''',
       description="Echo State Network module for PyTorch.",
       author='Stefano Nardo',
