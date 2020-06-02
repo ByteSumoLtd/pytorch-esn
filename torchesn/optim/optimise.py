@@ -151,7 +151,7 @@ def defineSearch(
       # MSE, lower is better.
       # Minimize the fitness function value, plus minimize for shortest runtime ... so we find the best and most efficient ESN for the problem.
 
-      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.500)) # this will minimize two things, mse, and runtime, in that order. I'm weighting runtime lower at 0.5
+      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.10)) # this will minimize two things, mse, and runtime, in that order. I'm weighting runtime lower at 0.5
       creator.create("Individual", list, fitness=creator.FitnessMulti)
       # create a toolbox
       toolbox=base.Toolbox()
@@ -239,6 +239,7 @@ def defineSearch(
 
       pp = pprint.PrettyPrinter(indent=4)  
       best_params = hof[0]
+      best_fitness = hof[0].fitness
       #pp.pprint(hof[0])
 
       # extract optimised parameters from hof, build a dict comprehension to
@@ -246,9 +247,9 @@ def defineSearch(
       # opt_params={'attr_input_size': hof[0], 'attr_output_size': hof[1], 'attr_batch_first': hof[2], 'attr_hidden': hof[3], 'attr_num_layers': hof[4], 'attr_nonlinearity': hof[5], 'attr_leaking_rate': hof[6], 'attr_spectral_radius': hof[7], 'attr_w_io': hof[8], 'attr_w_ih_scale': hof[9], 'attr_lambda_reg': hof[10], 'attr_density': hof[11], 'attr_readout_training': hof[12], 'search_output_steps': hof[13], 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability}
 
 
-      opt_params={'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 
- 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'search_output_steps': best_params[13], 'cmdline_tool': cmdline_tool, 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability}
+      opt_params={'_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'search_output_steps': best_params[13], 'cmdline_tool': cmdline_tool, 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability}
 
-      pp.pprint(opt_params)
+      #debug:
+      #pp.pprint(opt_params)
 
       return opt_params

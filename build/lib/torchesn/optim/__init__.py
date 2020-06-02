@@ -1,3 +1,4 @@
-from .optimise import optimise
+from .optimise import evaluate, defineSearch
 
-__all__ = ['optimise']
+__all__ = ['evaluate', 'defineSearch']
+

@@ -89,15 +89,6 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
      loss_fcn = torch.nn.MSELoss()
 
      # end of data prep.
-     # to do:
-     # it would be good to cache the results of the data prep somewhere on ssd as torch / numpy arrays, on the first run
-     # and on subsequent runs, simply load them, rather than recalculate them each run.
-     # Additionally - it would be good to add in a parameterised sampling strategy here.
-     # so that the evolution uses highly sampled data for early generations, and gradually uses more of the data as evolution progresses
-     # this could help us to reduce the wall clock time of evolution and is an experiment to run later once things work smoothly.
-
-     # training/testing sampling strategy, parameterized on command line
-    
      # Timer. we start timer once data is prepared. Duration is used as a measure in fn_autotune, as part of the fitness function's multi-objective
      # evolution, so that we can find high performing, efficient (fast) ESN  models, rather than just bigger models. Time includes training + testing
      # If you tailor the code to use multiple GPUs of different speeds/types etc, this might need a rethink

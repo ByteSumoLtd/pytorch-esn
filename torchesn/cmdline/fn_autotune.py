@@ -3,6 +3,7 @@ import time
 import torch.nn
 import numpy as np
 import random
+import pprint
 import torchesn
 from torchesn.optim import *
 
@@ -36,7 +37,10 @@ def tuneESN(dataset, input_size, output_size, batch_first, max_layers,  hidden_s
                                , search_max_num_layers=max_layers 
                                , search_hidden_size_low=hidden_size_low, search_hidden_size_high=hidden_size_low)
 
-     print(best_params)
+
+     # pretty print the final data frrom the autotuning run
+     pp = pprint.PrettyPrinter(indent=4)
+     pp.pprint(best_params)
      return
     
 
