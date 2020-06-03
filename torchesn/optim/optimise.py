@@ -19,6 +19,7 @@ import time
 import subprocess
 import os
 import pprint
+import multiprocessing
 
 # Define how to call and evaluate the pytorch-esn function as an genetic
 # Individual, where hyperparamters are considered genes.
@@ -68,7 +69,7 @@ def evaluate(individual):
 
      test_mse = float(result.split(" ")[0])
      duration = float(result.split(" ")[1])
-     
+     #print(runstring, " #  test_error: ", test_mse," # eval_duration: ", duration)    
      return test_mse, duration
           
 
@@ -104,6 +105,7 @@ def defineSearch(
             , search_output_steps=['mean', 'last', 'all', 'all', 'all', 'all']
             , washout=500
             , cmdline_tool='fn_mackey_glass'
+            , pool_size=1
             , ):
 
       # before we configure all the deap stuff, we first define our bespoke mutate function, that needs the default params set above
@@ -222,6 +224,13 @@ def defineSearch(
       stats.register("min", np.min)
       stats.register("max", np.max)
 
+      # set up a pool of evaluation workers here. Be sure to check your GPU can handle concurrent evals.
+      # later I will set up a worker_pool_size as a command line parameter to fn_autotune
+
+      # Process Pool of 4 workers, the size of the pool comes from the commandline now, or defaults to 1
+      pool = multiprocessing.Pool(processes=pool_size)
+      toolbox.register("map", pool.map)
+
       # just before we start, lets grab the start time, and calc a duration
       start_time = datetime.datetime.now()
       print(start_time)
@@ -230,6 +239,7 @@ def defineSearch(
                                mutpb=mutation_probability, ngen=number_of_generations, halloffame=hof,
                                verbose=True)
 
+      pool.close()
       end_time = datetime.datetime.now()
       print(end_time)
       # this is a debug line, later when I'm happy everything works, comment it out.
