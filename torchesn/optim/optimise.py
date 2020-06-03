@@ -107,6 +107,7 @@ def defineSearch(
             , washout=500
             , cmdline_tool='fn_mackey_glass'
             , pool_size=1
+            , number_islands=0 # if we get this parameter >0 then we'll allocate the population_size to each island
             , ):
 
       # before we configure all the deap stuff, we first define our bespoke mutate function, that needs the default params set above
@@ -155,7 +156,7 @@ def defineSearch(
       # MSE, lower is better.
       # Minimize the fitness function value, plus minimize for shortest runtime ... so we find the best and most efficient ESN for the problem.
 
-      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.10)) # this will minimize two things, mse, and runtime, in that order. I'm weighting runtime lower at 0.5
+      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.10)) # this will minimize two things, mse, and runtime, in that order. I'm weighting runtime duration lower, at 0.30, as I'm primarily interested in best solutions, and in tie breakers the lowest cost one.
       creator.create("Individual", list, fitness=creator.FitnessMulti)
       # create a toolbox
       toolbox=base.Toolbox()
@@ -201,16 +202,25 @@ def defineSearch(
       # mental note: the above index numbers are needed to access these variables from hof, the hall_of_fame best individual evolved by our process
       # hof includes the whole population, so we set the best_params = hof[0] and then access the tuned values like this:  best_nonlinearity = best_params[5]
 
-
+      # this creates the random initial population to evolve 
       toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
       # configure the genetic search parameters
 
       crossover_probability=0.7
       mutation_probability=0.3
+
       # the below is a heuristic that worked well for me in the past. About
       # 6% to 8% of the population is usually a good tournement size
+
       tournement_size=math.ceil(population_size * 0.07) + 1
+      # this the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
+      k_migrants = tournement_size
+      # again, to be consistent if nothing else, lets use the same heuristic aproach for FREQ, ie the generations afterwhich we exchange migrants
+      # but note here, we use the requested number of generations to set the value
+      FREQ = math.ceil(number_of_generations * 0.07) + 1
+      
+
       toolbox.register("mate", tools.cxOnePoint)
       toolbox.register("mutate", mutate)
       toolbox.register("select", tools.selTournament, tournsize=tournement_size)
@@ -237,9 +247,28 @@ def defineSearch(
       start_time = datetime.datetime.now()
       print(start_time)
       # this command runs the genetic evolution - and it may take several hours, depending on your params          
-      pop, log=algorithms.eaSimple(pop, toolbox, cxpb=crossover_probability, stats=stats,
+      
+
+      ##################### this is the previous code for running the evolution.
+      if number_islands == 0;
+          # POP_SIZE = population_size
+          pop = toolbox.population(n=population_size)
+          pop = tools.selBest(pop, int(0.1 * len(pop))) + tools.selTournament(pop, len(pop) - int(0.1 * len(pop)), tournsize=tournement_size)
+          # in the simple scenario we just run the vanilla eaSimple run, as:
+          pop, log=algorithms.eaSimple(pop, toolbox, cxpb=crossover_probability, stats=stats,
                                mutpb=mutation_probability, ngen=number_of_generations, halloffame=hof,
                                verbose=True)
+      elif number_islands > 0;
+          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest)
+          islands = [toolbox.population(n=population_size) for i in range(number_islands)]
+          
+          # we use islands, a more complex approach, so we register the "run" as an algorithm in deap
+          toolbox.register("algorithm", algorithms.eaSimple, toolbox=toolbox, cxpb=crossover_probability, mutpb=mutation_probability, 
+                               ngen=FREQ, verbose=True, stats=stats,  halloffame=hof, verbose=True)
+          for i in range(0, number_of_generations, FREQ):
+              results = toolbox.map(toolbox.algorithm, islands)
+              islands = [island for island, logbook in results]
+              toolbox.migrate(islands)
 
       pool.close()
       end_time = datetime.datetime.now()
