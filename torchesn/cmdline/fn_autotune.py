@@ -33,6 +33,7 @@ import click
 @click.option("--output_size", default=1, help="size input size data, a univariate timeseries is 1: default 1")     
 @click.option("--batch_first", default=False, help="If True the input and output tensors are provided as (batch, seq, feature). Default: False")
 @click.option("--max_layers", default=1, type=int, help="the maximum number of layers use in our DeepESN search. default: 1")
+@click.option("--min_layers", defatult=1, type=int, help="the minimum number of layers to use in our DeepESN search. default: 1")
 @click.option("--hidden_size_low", default=500, help="lower bound of the hidden reservoir to search: default 500")
 @click.option("--hidden_size_high", default=1000, help="upper bound of the hidden size to search. Default 2000")
 
@@ -49,7 +50,7 @@ def tuneESN(dataset, input_size, output_size, batch_first, max_layers, hidden_si
      #     now, call the DEAP genetic search, with our parameters
      best_params = defineSearch(dataset, input_size, output_size, batch_first
                                , population_size=population, number_of_generations=generations
-                               , search_max_num_layers=max_layers 
+                               , search_max_num_layers=max_layers, search_max_num_layers=min_layers
                                , search_hidden_size_low=hidden_size_low, search_hidden_size_high=hidden_size_low
                                , pool_size=worker_pool)
 
