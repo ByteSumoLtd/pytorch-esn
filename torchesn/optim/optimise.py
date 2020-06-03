@@ -88,6 +88,7 @@ def defineSearch(
             , number_of_generations=15
             , search_hidden_size_low=100
             , search_hidden_size_high=1000
+            , search_min_num_layers=1
             , search_max_num_layers=2
             , search_nonlinearity=['tanh', 'tanh']
             , search_leaking_rate_low=0.1
@@ -115,8 +116,9 @@ def defineSearch(
           if gene == 3:       # [3] is hidden size
               # grow or shrink the resevoir on mutate
               individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
+
           elif gene == 4:     # 4 number of layers
-              individual[1]= random.randint(1, search_max_num_layers)
+              individual[1]= random.randint(search_min_num_layers, search_max_num_layers)
 
           elif gene == 5:     # 5 nonlinearity
               individual[5]=random.choice(search_nonlinearity)
@@ -164,7 +166,7 @@ def defineSearch(
       toolbox.register("attr_output_size",random.choice, [output_size])  # there is only one choice
       toolbox.register("attr_batch_first", random.choice, [batch_first])  # there is only one choice
       toolbox.register("attr_hidden", random.randint, search_hidden_size_low, search_hidden_size_high)
-      toolbox.register("attr_num_layers", random.randint, 1, search_max_num_layers)
+      toolbox.register("attr_num_layers", random.randint, search_min_num_layers, search_max_num_layers)
       toolbox.register("attr_nonlinearity", random.choice, search_nonlinearity)
       toolbox.register("attr_leaking_rate", random.uniform, search_leaking_rate_low, search_leaking_rate_high)
       toolbox.register("attr_spectral_radius", random.uniform, search_spectral_radius_low, search_spectral_radius_high)
