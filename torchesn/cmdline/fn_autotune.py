@@ -1,4 +1,19 @@
+'''
 
+This is a commandline utility tool, that helps you to use evolutionary genetic search, to find good hyperparameters for your ESN models.
+It will automate calling out to DEAP (Distributed Evolutionary Algorithms in Python) and configuring it with good defaults.
+
+Only the most useful parameters are exposed here, to simplify the modelling searching process.
+
+Notes:
+You can set the worker pool information here, controlling how many concurrent processes will be used by Deap. 
+This needs setting by you after some experimentation - to discover how much GPU memory your training processes consume. If your consumed_memory * workers > GPU_memory your job will fail.
+
+to do:
+
+Later I will parameterise the cmdline tool used to run the evolution, so we many different types of models, that share a common data prep pipeline.
+
+'''
 import time
 import torch.nn
 import numpy as np
@@ -42,8 +57,19 @@ def tuneESN(dataset, input_size, output_size, batch_first, max_layers, hidden_si
      # pretty print the final data frrom the autotuning run
      pp = pprint.PrettyPrinter(indent=4)
      pp.pprint(best_params)
+
+     handy_cmd = ("# " + best_params['_cmdline_tool'] + " --hidden_size " + str(best_params['attr_hidden']) + " --input_size " + str(best_params['attr_input_size'])
+                  + " --output_size " + str(best_params['attr_output_size']) + " --spectral_radius " + str(best_params['attr_spectral_radius']) 
+                  + " --density " + str(best_params['attr_density']) + " --leaking_rate " + str(best_params['attr_leaking_rate'])
+                  + " --lambda_reg " + str(best_params['attr_lambda_reg']) + " --nonlinearity " + str(best_params['attr_nonlinearity'])
+                  + " --readout_training " + str(best_params['attr_readout_training']) + " --w_io " + str(best_params['attr_w_io'])
+                  + " --w_ih_scale " + str(best_params['attr_w_ih_scale']) + " --seed 10" )
+     print("")
+     print("# the command line view of the params is:")
+     print(handy_cmd)
      return
     
 
 if __name__ == "__main__":
      tuneESN()
+

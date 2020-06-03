@@ -1,15 +1,20 @@
+'''
 
+This is a commandline tool version of DeepESN, that allows you to quickly build a model for any univariate timeseries following the data conventions of the mackey-glass example.
+This cmdline utitily is used by Deap to spawn evaluating individuals in a popoulation, so we can use evolutionary search to find good hyperparameters.
+
+This function should also work for multivariate timeseries, although that has not been tested. Your mileage may vary.
+
+To get help on the tool, try:
+
+fn_mackey_glass --help
+
+'''
 import time
 import torch.nn
 import numpy as np
 from torchesn.nn import ESN
 from torchesn.utils import prepare_target, washout_tensor
-
-#import torch.nn
-#import numpy as np
-#import torchesn
-# import nn
-#from torchesn import utils 
 
 import random
 

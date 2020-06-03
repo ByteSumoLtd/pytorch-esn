@@ -1,0 +1,33 @@
+41      57      4.24614 4.50325 5.30913e-07     14.737
+42      43      3.81414 3.92856 5.30913e-07     12.1148
+43      47      3.9308  4.04544 5.30913e-07     11.9666
+44      50      4.92676 5.55546 5.30913e-07     18.7554
+45      45      4.08609 4.2394  5.275e-07       13.5622
+46      45      4.59578 5.39363 5.275e-07       18.3415
+47      49      4.57682 5.22182 5.275e-07       18.6948
+48      45      4.43776 4.9343  5.275e-07       18.2401
+49      49      4.34634 4.92654 5.275e-07       18.7078
+50      40      3.94322 4.13728 5.275e-07       13.3786
+2020-06-03 03:44:46.691103
+{   '_training_loss': deap.creator.FitnessMulti((5.275003505913192e-07, 6.248892307281495)),
+    'attr_batch_first': False,
+    'attr_density': 0.1867828782516504,
+    'attr_hidden': 1000,
+    'attr_input_size': 1,
+    'attr_lambda_reg': 0.353195885263504,
+    'attr_leaking_rate': 0.9969475672367618,
+    'attr_nonlinearity': 'tanh',
+    'attr_num_layers': 1,
+    'attr_output_size': 1,
+    'attr_readout_training': 'cholesky',
+    'attr_spectral_radius': 1.6485061335323914,
+    'attr_w_ih_scale': 0.4182131077777984,
+    'attr_w_io': True,
+    'cmdline_tool': 'fn_mackey_glass',
+    'crossover_probability': 0.7,
+    'end_time': datetime.datetime(2020, 6, 3, 3, 44, 46, 691103),
+    'generations': 50,
+    'mutation_probability': 0.3,
+    'population': 60,
+    'search_output_steps': 'all',
+    'start_time': datetime.datetime(2020, 6, 3, 1, 51, 27, 518567)}
