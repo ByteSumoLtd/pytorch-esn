@@ -50,7 +50,7 @@ def tuneESN(dataset, input_size, output_size, batch_first, max_layers, hidden_si
      #     now, call the DEAP genetic search, with our parameters
      best_params = defineSearch(dataset, input_size, output_size, batch_first
                                , population_size=population, number_of_generations=generations
-                               , search_max_num_layers=max_layers, search_max_num_layers=min_layers
+                               , search_max_num_layers=max_layers, search_min_num_layers=min_layers
                                , search_hidden_size_low=hidden_size_low, search_hidden_size_high=hidden_size_low
                                , pool_size=worker_pool)
 
