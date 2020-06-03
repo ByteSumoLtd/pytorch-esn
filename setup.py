@@ -7,7 +7,7 @@ setup(name='pytorch-esn',
           'torch',
           'torchvision',
           'numpy',
-          'click',
+          'click'
       ],
       include_package_data=True,
       entry_points='''
