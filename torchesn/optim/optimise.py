@@ -250,7 +250,7 @@ def defineSearch(
       
 
       ##################### this is the previous code for running the evolution.
-      if number_islands == 0;
+      if number_islands == 0:
           # POP_SIZE = population_size
           pop = toolbox.population(n=population_size)
           pop = tools.selBest(pop, int(0.1 * len(pop))) + tools.selTournament(pop, len(pop) - int(0.1 * len(pop)), tournsize=tournement_size)
@@ -258,13 +258,13 @@ def defineSearch(
           pop, log=algorithms.eaSimple(pop, toolbox, cxpb=crossover_probability, stats=stats,
                                mutpb=mutation_probability, ngen=number_of_generations, halloffame=hof,
                                verbose=True)
-      elif number_islands > 0;
+      elif number_islands > 0:
           toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest)
           islands = [toolbox.population(n=population_size) for i in range(number_islands)]
           
           # we use islands, a more complex approach, so we register the "run" as an algorithm in deap
           toolbox.register("algorithm", algorithms.eaSimple, toolbox=toolbox, cxpb=crossover_probability, mutpb=mutation_probability, 
-                               ngen=FREQ, verbose=True, stats=stats,  halloffame=hof, verbose=True)
+                               ngen=FREQ, stats=stats,  halloffame=hof, verbose=True)
           for i in range(0, number_of_generations, FREQ):
               results = toolbox.map(toolbox.algorithm, islands)
               islands = [island for island, logbook in results]
