@@ -336,6 +336,7 @@ def defineSearch(
               # On a pulse of FREQ, force ring migration of individuals across our demes/islands
               if gen % FREQ == 0:
                   toolbox.migrate(demes)
+                  print("------------------------migration across islands--------------")
               gen += 1
 
 
