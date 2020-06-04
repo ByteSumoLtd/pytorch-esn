@@ -291,7 +291,7 @@ def defineSearch(
           # configure demes: define fitness within deme, stats, hof, and logging
           for idx, deme in enumerate(demes):
               for ind in deme:
-              ind.fitness.values = toolbox.evaluate(ind)
+                  ind.fitness.values = toolbox.evaluate(ind)
               stats.update(deme, idx)
               hof.update(deme)
               logger.logGeneration(gen="0.%d" % idx, evals=len(deme),stats=stats, index=idx)
@@ -315,7 +315,7 @@ def defineSearch(
                   hof.update(deme)
                   logger.logGeneration(gen="%d.%d" % (gen, idx), evals=len(deme), stats=stats, index=idx)
 
-              # On a pulse of FREQ, force ring migration across our demes
+              # On a pulse of FREQ, force ring migration of individuals across our demes/islands
               if gen % FREQ == 0:
                   toolbox.migrate(demes)
 
