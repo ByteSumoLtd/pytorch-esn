@@ -73,12 +73,10 @@ def evaluate(individual):
      return test_mse, duration
           
 
-    ##########################################################################
-    # Configure DEAP by creating a tool box and registering our configurations
-    ##########################################################################
+##########################################################################
+# Configure DEAP by creating a tool box and registering our configurations
+##########################################################################
 
-
-    # perhaps I integrate the click stuff here ... first let's try isolation of the lib from the cli
 def defineSearch(
               input_file_uri
             , input_size
@@ -110,7 +108,15 @@ def defineSearch(
             , number_islands=0 # if we get this parameter >0 then we'll allocate the population_size to each island
             , ):
 
-      # before we configure all the deap stuff, we first define our bespoke mutate function, that needs the default params set above
+      # Reproduciple evolution:
+      # I noticed you can force DEAP to use a standard seed, to make runs reproducible I think? Not sure if that's good overall
+      # as a user requesting a second run would want a second opinion for ESN settings? 
+      # however, I'm putting in a placeholder here for it, as it could be thing to explore...
+      # Uncomment the below to trial the manual seed setting functionality:
+      # random.seed(64)
+
+      # Private functions used by DEAP to run the evolution:
+      # define our bespoke mutate function, that needs the default params set above
       def mutate(individual):
       # print('I am mutating!')
           gene=random.randint(3, 14)  # select which parameter to mutate
@@ -151,18 +157,21 @@ def defineSearch(
           return individual,
           # note the final comma, leave it in the return
 
-
       # Start configuring out DEAP search by setting up the DEAP genetic search fitness function, for ESN
-      # MSE, lower is better.
-      # Minimize the fitness function value, plus minimize for shortest runtime ... so we find the best and most efficient ESN for the problem.
+      # For our problems minimimising MSE, lower fitness scores is better. Shorter runtimes also preferable to long running ones.
+      # So we will set two fitness scores, MSE and Duration and blend with weights the search... to find good and efficient ESNs architectures.
 
-      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.10)) # this will minimize two things, mse, and runtime, in that order. I'm weighting runtime duration lower, at 0.30, as I'm primarily interested in best solutions, and in tie breakers the lowest cost one.
+      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.10)) 
+      # above we set out mse, and runtime, in that order for fitness.  
+      # I'm weighting runtime duration lower, at 10%, as I'm primarily interested in best solutions, and want tie breakers prefering lowest cost.
       creator.create("Individual", list, fitness=creator.FitnessMulti)
-      # create a toolbox
+
+
+      # create a toolbox for deap.
       toolbox=base.Toolbox()
 
       # define how we map ESN parameters to genes, and define how to randomly
-      # construct new ESN individuals
+      # construct new ESN "individuals" representing ESNs with different hyperparameters
       toolbox.register("attr_input_size", random.choice, [input_size])  # there is only one choice
       toolbox.register("attr_output_size",random.choice, [output_size])  # there is only one choice
       toolbox.register("attr_batch_first", random.choice, [batch_first])  # there is only one choice
@@ -178,57 +187,61 @@ def defineSearch(
       toolbox.register("attr_readout_training", random.choice, search_readout_training)
       toolbox.register("attr_output_steps", random.choice, search_output_steps)
       toolbox.register("attr_cmdline_tool", random.choice, [cmdline_tool])  # note, this is just a single value, but we need it to eval the individual
-      toolbox.register("attr_dataset", random.choice, [input_file_uri]) # note, this is just a single value, but we need it to eval the individual
+      toolbox.register("attr_dataset", random.choice, [input_file_uri])     # note, this is just a single value, but we need it to eval the individual
       # This is the order in which genes will be combined to create a chromosome
       N_CYCLES=1
 
       toolbox.register("individual", tools.initCycle, creator.Individual,(
-		toolbox.attr_input_size     #0 
-                , toolbox.attr_output_size  #1
-                , toolbox.attr_batch_first  #2
-                , toolbox.attr_hidden       #3
-                , toolbox.attr_num_layers   #4
-                , toolbox.attr_nonlinearity #5
-                , toolbox.attr_leaking_rate #6
-                , toolbox.attr_spectral_radius #7
-                , toolbox.attr_w_io            #8
-                , toolbox.attr_w_ih_scale      #9
-                , toolbox.attr_density         #10
-                , toolbox.attr_lambda_reg      #11
+		toolbox.attr_input_size         #0 #genes are positional, the idx mapped in comments is critical to get correct elsewhere 
+                , toolbox.attr_output_size      #1
+                , toolbox.attr_batch_first      #2
+                , toolbox.attr_hidden           #3
+                , toolbox.attr_num_layers       #4
+                , toolbox.attr_nonlinearity     #5
+                , toolbox.attr_leaking_rate     #6
+                , toolbox.attr_spectral_radius  #7
+                , toolbox.attr_w_io             #8
+                , toolbox.attr_w_ih_scale       #9
+                , toolbox.attr_density          #10
+                , toolbox.attr_lambda_reg       #11
                 , toolbox.attr_readout_training #12
                 , toolbox.attr_output_steps     #13
                 , toolbox.attr_cmdline_tool     #14
-                , toolbox.attr_dataset), n=N_CYCLES) #15
+                , toolbox.attr_dataset)         #15
+                , n=N_CYCLES)
       # mental note: the above index numbers are needed to access these variables from hof, the hall_of_fame best individual evolved by our process
-      # hof includes the whole population, so we set the best_params = hof[0] and then access the tuned values like this:  best_nonlinearity = best_params[5]
+      # hof includes the whole population, so we set the best_params = hof[0] and then access values like this:  best_nonlinearity = best_params[5]
 
-      # this creates the random initial population to evolve 
+      # this creates the random initial population of ESN solutions to evolve, coded in genes 
       toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-      # configure the genetic search parameters
-
+      # configure the genetic search parameters. We can tune these, but these are fairly standard defaults
       crossover_probability=0.7
       mutation_probability=0.3
 
-      # the below is a heuristic that worked well for me in the past. About
-      # 6% to 8% of the population is usually a good tournement size
+      # Dynamic Settings
 
+      # the below is a heuristic that worked well for me in the past. About
+      # 6% to 8% of the population is usually a good tournement size (from experience with Karoo_gp)
       tournement_size=math.ceil(population_size * 0.07) + 1
-      # this the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
+      # as the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
       k_migrants = tournement_size
-      # again, to be consistent if nothing else, lets use the same heuristic aproach for FREQ, ie the generations afterwhich we exchange migrants
-      # but note here, we use the requested number of generations to set the value
+      # again, to be consistent if nothing else, lets use the same heuristic aproach for FREQ, ie the no. of generations afterwhich we exchange migrants
+      # but note here, we calc from total number of generations to set the value, not total population. Implies 10-ish deme migrations per run
       FREQ = math.ceil(number_of_generations * 0.07) + 1
       
-
+      # set out evolution functions. Note we defined a bespoke mutate function, as our hyperparams/genes have mixed types.
       toolbox.register("mate", tools.cxOnePoint)
       toolbox.register("mutate", mutate)
       toolbox.register("select", tools.selTournament, tournsize=tournement_size)
       toolbox.register("evaluate", evaluate)
 
       # POP_SIZE = population_size
-      pop = toolbox.population(n=population_size)
-      pop = tools.selBest(pop, int(0.1 * len(pop))) + tools.selTournament(pop, len(pop) - int(0.1 * len(pop)), tournsize=tournement_size)
+      # moving the below population management into conditional block below, to offer deme / no deme options
+      # pop = toolbox.population(n=population_size)
+      # pop = tools.selBest(pop, int(0.1 * len(pop))) + tools.selTournament(pop, len(pop) - int(0.1 * len(pop)), tournsize=tournement_size)
+
+      # set out administration functions for deap, hall of fame (best) and statistics
       hof = tools.HallOfFame(1)
       stats=tools.Statistics(lambda ind: ind.fitness.values)
       stats.register("avg", np.mean)
@@ -249,55 +262,91 @@ def defineSearch(
       # this command runs the genetic evolution - and it may take several hours, depending on your params          
       
 
-      ##################### this is the previous code for running the evolution.
+      ##################### Evolve Solution for a single population:
       if number_islands == 0:
           # POP_SIZE = population_size
           pop = toolbox.population(n=population_size)
           pop = tools.selBest(pop, int(0.1 * len(pop))) + tools.selTournament(pop, len(pop) - int(0.1 * len(pop)), tournsize=tournement_size)
-          # in the simple scenario we just run the vanilla eaSimple run, as:
+
+          # run simple single population evolution 
           pop, log=algorithms.eaSimple(pop, toolbox, cxpb=crossover_probability, stats=stats,
                                mutpb=mutation_probability, ngen=number_of_generations, halloffame=hof,
                                verbose=True)
 
+      ##################### Evolve "multidemic" Solution having subpopulations, with "ring migrations" occuring on each FREQ defined generation
       elif number_islands > 0:
-          # this test not working - try emulating this working example using demes: https://groups.google.com/forum/#!topic/deap-users/BTX6d5OIIVw
-          # this is the new islands migration code that is troublesome!
-          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest)
-          islands = [toolbox.population(n=population_size) for i in range(number_islands)]
-          # unregister items that can't be picked         
-          toolbox.unregister("individual")
-          toolbox.unregister("population")
+          # based on an example using demes found here: https://groups.google.com/forum/#!topic/deap-users/BTX6d5OIIVw
+          # note: number_islands = number_demes
 
+          # define island ring migration strategy: we only migrate unique individuals, hence "replacement=random.sample" 
+          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=random.sample)
+
+          # define demes, which are sub-populations, or "islands" of size population_size. Note global population = number_islands*population_size
+          demes = [toolbox.population(n=population_size) for _ in xrange(number_islands)]
+
+          # add extra logging for demes
+          logger = tools.EvolutionLogger(["gen", "evals"] + stats.functions.keys())
+          logger.logHeader()
  
-          # we use islands, a more complex approach, so we register the "run" as an algorithm in deap
-          toolbox.register("algorithm", algorithms.eaSimple, toolbox=toolbox, cxpb=crossover_probability, mutpb=mutation_probability, 
-                               ngen=FREQ, stats=stats,  halloffame=hof, verbose=True)
-          for i in range(0, number_of_generations, FREQ):
-              results = toolbox.map(toolbox.algorithm, islands)
-              islands = [island for island, logbook in results]
-              tools.migRing(islands, 15, tools.selBest)
+          # configure demes: define fitness within deme, stats, hof, and logging
+          for idx, deme in enumerate(demes):
+              for ind in deme:
+              ind.fitness.values = toolbox.evaluate(ind)
+              stats.update(deme, idx)
+              hof.update(deme)
+              logger.logGeneration(gen="0.%d" % idx, evals=len(deme),stats=stats, index=idx)
 
+          # configure and update global report, gather stats across demes
+          alldemes = deme[0]
+          for d in range(1, number_islands):
+              alldemes = alldemes + deme[d]  
+          stats.update(alldemes, 3)
+          logger.logGeneration(gen=0, evals="-", stats=stats, index=3)
+
+          # Run Deme based evolution
+          gen = 1
+          while gen <= number_of_generations and stats.min[3][-1][0] > 0 : 
+
+              for idx, deme in enumerate(demes):
+                  algorithms.varAnd(deme, toolbox, cxpb=CXPB, mutpb=MUTPB)
+                  for ind in deme:
+                      ind.fitness.values = toolbox.evaluate(ind)
+                  stats.update(deme, idx)
+                  hof.update(deme)
+                  logger.logGeneration(gen="%d.%d" % (gen, idx), evals=len(deme), stats=stats, index=idx)
+
+              # On a pulse of FREQ, force ring migration across our demes
+              if gen % FREQ == 0:
+                  toolbox.migrate(demes)
+
+              # configure and update global report, gather stats across demes
+              xalldemes = deme[0]
+              for d in range(1, number_islands):
+                  xalldemes = xalldemes + deme[d]
+              stats.update(xalldemes, 3)
+              logger.logGeneration(gen="%d" % gen, evals="-", stats=stats,index=3)
+              gen += 1
+
+
+      # do house keeping to close our pool, and record ending timestampt
       pool.close()
       end_time = datetime.datetime.now()
+
+      # debug / reporting: pass back endtime in readable format to pty, comment out if unwanted
       print(end_time)
-      # this is a debug line, later when I'm happy everything works, comment it out.
 
-      
-      #print(hof[0])
+      # debug: we can pretty print hof to pty, versus outputs printed by caller if checking for a mismatch/bug
+      # pp = pprint.PrettyPrinter(indent=4)  
+      # pprint(hof[0])
 
-      pp = pprint.PrettyPrinter(indent=4)  
+      # assign best found individual across the hall of fame as our output, best_params.
       best_params = hof[0]
       best_fitness = hof[0].fitness
-      #pp.pprint(hof[0])
 
-      # extract optimised parameters from hof, build a dict comprehension to
-      # return them.
-      # opt_params={'attr_input_size': hof[0], 'attr_output_size': hof[1], 'attr_batch_first': hof[2], 'attr_hidden': hof[3], 'attr_num_layers': hof[4], 'attr_nonlinearity': hof[5], 'attr_leaking_rate': hof[6], 'attr_spectral_radius': hof[7], 'attr_w_io': hof[8], 'attr_w_ih_scale': hof[9], 'attr_lambda_reg': hof[10], 'attr_density': hof[11], 'attr_readout_training': hof[12], 'search_output_steps': hof[13], 'start_time': start_time, 'end_time': end_time, 'population': population_size, 'generations': number_of_generations, 'crossover_probability': crossover_probability, 'mutation_probability': mutation_probability}
-
-
+      # create final output:
+      # build a dict comprehension, to collect all the best parameters of the ESN, and settings used to find it
+      # is needed to so  we can return interpretable results of evolution back to the user/caller function
       opt_params={'run_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'attr_output_steps': best_params[13], '_cmdline_tool': cmdline_tool, 'run_start_time': start_time, 'run_end_time': end_time, 'auto_population': population_size, 'auto_generations': number_of_generations, 'auto_crossover_probability': crossover_probability, 'auto_mutation_probability': mutation_probability}
 
-      #debug:
-      #pp.pprint(opt_params)
-
+      # pass back our combined record of results to caller
       return opt_params
