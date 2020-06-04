@@ -228,7 +228,7 @@ def defineSearch(
       # as the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
       k_migrants = tournement_size
       # here, we calc from total number of generations, a FREQ value that implies 5ish deme migrations per run
-      FREQ = math.ceil(number_of_generations * 0.21) + 1
+      FREQ = math.ceil(number_of_generations * 0.07) + 1
       
       # set out evolution functions. Note we defined a bespoke mutate function, as our hyperparams/genes have mixed types.
       toolbox.register("mate", tools.cxOnePoint)
