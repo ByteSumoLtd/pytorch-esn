@@ -282,7 +282,7 @@ def defineSearch(
           toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=random.sample)
 
           # define demes, which are sub-populations, or "islands" of size population_size. Note global population = number_islands*population_size
-          demes = [toolbox.population(n=population_size) for _ in xrange(number_islands)]
+          demes = [toolbox.population(n=population_size) for _ in range(number_islands)]
 
           # add extra logging for demes
           logger = tools.EvolutionLogger(["gen", "evals"] + stats.functions.keys())
