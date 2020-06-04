@@ -21,6 +21,7 @@ import os
 import pprint
 import multiprocessing
 
+
 # Define how to call and evaluate the pytorch-esn function as an genetic
 # Individual, where hyperparamters are considered genes.
 def evaluate(individual):
@@ -290,13 +291,25 @@ def defineSearch(
  
           # configure demes: define fitness within deme, stats, hof, and logging
           for idx, deme in enumerate(demes):
-              for ind in deme:
-                  ind.fitness.values = toolbox.evaluate(ind)
+              #for ind in deme:
+                  #ind.fitness.values = toolbox.evaluate(ind)  # no parallel run 
+
+              demewide_ind = [ind for ind in deme]
+              fitnesses = toolbox.map(toolbox.evaluate, demewide_ind)
+              for ind, fit in zip(demewide_ind, fitnesses):
+                  ind.fitness.values = fit
+
+
               #stats.update(deme, idx)
               log.record(gen=0, deme=idx, evals=len(deme), **stats.compile(deme))
               hof.update(deme)
               # debug / outputs to pty, can comment out
-              print(logbook.stream)
+              print(log.stream)
+
+          # test: create a little function to run an individual's fitness eval, to simplify parallelism
+          #def queueEval(ind):
+          #    ind.fitness.values = toolbox.evaluate(ind)
+          #    return
 
           # Run Deme based evolution
           gen = 1
@@ -305,19 +318,24 @@ def defineSearch(
               for idx, deme in enumerate(demes):
                   deme[:] = toolbox.select(deme, len(deme))
                   deme[:] = algorithms.varAnd(deme, toolbox, cxpb=crossover_probability, mutpb=mutation_probability)
-                  
+
                   invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
-                  for ind in invalid_ind:
-                      ind.fitness.values = toolbox.evaluate(ind)
+                  #for ind in invalid_ind:    
+                  #    ind.fitness.values = toolbox.evaluate(ind)  # original code
+
+                  # the below evaluates fitness in parallel. good!
+                  fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+                  for ind, fit in zip(invalid_ind, fitnesses):
+                      ind.fitness.values = fit
+
                   log.record(gen=gen, deme=idx, evals=len(deme), **stats.compile(deme))
                   hof.update(deme)
-              print(logbook.stream)
+              print(log.stream)
 
               # On a pulse of FREQ, force ring migration of individuals across our demes/islands
               if gen % FREQ == 0:
                   toolbox.migrate(demes)
-
               gen += 1
 
 
@@ -339,7 +357,7 @@ def defineSearch(
       # create final output:
       # build a dict comprehension, to collect all the best parameters of the ESN, and settings used to find it
       # is needed to so  we can return interpretable results of evolution back to the user/caller function
-      opt_params={'run_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'attr_output_steps': best_params[13], '_cmdline_tool': cmdline_tool, 'run_start_time': start_time, 'run_end_time': end_time, 'auto_population': population_size, 'auto_generations': number_of_generations, 'auto_crossover_probability': crossover_probability, 'auto_mutation_probability': mutation_probability}
+      opt_params={'run_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'attr_output_steps': best_params[13], '_cmdline_tool': cmdline_tool, 'run_start_time': start_time, 'run_end_time': end_time, 'auto_population': population_size, 'auto_islands': number_islands, 'auto_generations': number_of_generations, 'auto_crossover_probability': crossover_probability, 'auto_mutation_probability': mutation_probability}
 
       # pass back our combined record of results to caller
       return opt_params
