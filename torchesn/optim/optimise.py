@@ -275,8 +275,8 @@ def defineSearch(
 
       ##################### Evolve "multidemic" Solution having subpopulations, with "ring migrations" occuring on each FREQ defined generation
       elif number_islands > 0:
-          # based on an example using demes found here: https://groups.google.com/forum/#!topic/deap-users/BTX6d5OIIVw
-          # note: number_islands = number_demes
+          # based on an example herre: https://github.com/DEAP/deap/blob/master/examples/ga/onemax_multidemic.py 
+          # note:our user parameters called number_islands = number_demes
 
           # define island ring migration strategy: we only migrate unique individuals, hence "replacement=random.sample" 
           toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=random.sample)
@@ -285,46 +285,39 @@ def defineSearch(
           demes = [toolbox.population(n=population_size) for _ in range(number_islands)]
 
           # add extra logging for demes
-          logger = tools.EvolutionLogger(["gen", "evals"] + stats.functions.keys())
-          logger.logHeader()
+          log = tools.Logbook()
+          log.header = "gen", "deme", "evals", "std", "min", "avg", "max"
  
           # configure demes: define fitness within deme, stats, hof, and logging
           for idx, deme in enumerate(demes):
               for ind in deme:
                   ind.fitness.values = toolbox.evaluate(ind)
-              stats.update(deme, idx)
+              #stats.update(deme, idx)
+              log.record(gen=0, deme=idx, evals=len(deme), **stats.compile(deme))
               hof.update(deme)
-              logger.logGeneration(gen="0.%d" % idx, evals=len(deme),stats=stats, index=idx)
-
-          # configure and update global report, gather stats across demes
-          alldemes = deme[0]
-          for d in range(1, number_islands):
-              alldemes = alldemes + deme[d]  
-          stats.update(alldemes, 3)
-          logger.logGeneration(gen=0, evals="-", stats=stats, index=3)
+              # debug / outputs to pty, can comment out
+              print(logbook.stream)
 
           # Run Deme based evolution
           gen = 1
-          while gen <= number_of_generations and stats.min[3][-1][0] > 0 : 
+          while gen <= number_of_generations and log[-1]["min"] > 0:     # halt if MSE "min" is zero, we've solved the problem
 
               for idx, deme in enumerate(demes):
-                  algorithms.varAnd(deme, toolbox, cxpb=CXPB, mutpb=MUTPB)
-                  for ind in deme:
+                  deme[:] = toolbox.select(deme, len(deme))
+                  deme[:] = algorithms.varAnd(deme, toolbox, cxpb=crossover_probability, mutpb=mutation_probability)
+                  
+                  invalid_ind = [ind for ind in deme if not ind.fitness.valid]
+
+                  for ind in invalid_ind:
                       ind.fitness.values = toolbox.evaluate(ind)
-                  stats.update(deme, idx)
+                  log.record(gen=gen, deme=idx, evals=len(deme), **stats.compile(deme))
                   hof.update(deme)
-                  logger.logGeneration(gen="%d.%d" % (gen, idx), evals=len(deme), stats=stats, index=idx)
+              print(logbook.stream)
 
               # On a pulse of FREQ, force ring migration of individuals across our demes/islands
               if gen % FREQ == 0:
                   toolbox.migrate(demes)
 
-              # configure and update global report, gather stats across demes
-              xalldemes = deme[0]
-              for d in range(1, number_islands):
-                  xalldemes = xalldemes + deme[d]
-              stats.update(xalldemes, 3)
-              logger.logGeneration(gen="%d" % gen, evals="-", stats=stats,index=3)
               gen += 1
 
 
