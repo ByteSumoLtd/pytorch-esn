@@ -258,17 +258,24 @@ def defineSearch(
           pop, log=algorithms.eaSimple(pop, toolbox, cxpb=crossover_probability, stats=stats,
                                mutpb=mutation_probability, ngen=number_of_generations, halloffame=hof,
                                verbose=True)
+
       elif number_islands > 0:
+          # this test not working - try emulating this working example using demes: https://groups.google.com/forum/#!topic/deap-users/BTX6d5OIIVw
+          # this is the new islands migration code that is troublesome!
           toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest)
           islands = [toolbox.population(n=population_size) for i in range(number_islands)]
-          
+          # unregister items that can't be picked         
+          toolbox.unregister("individual")
+          toolbox.unregister("population")
+
+ 
           # we use islands, a more complex approach, so we register the "run" as an algorithm in deap
           toolbox.register("algorithm", algorithms.eaSimple, toolbox=toolbox, cxpb=crossover_probability, mutpb=mutation_probability, 
                                ngen=FREQ, stats=stats,  halloffame=hof, verbose=True)
           for i in range(0, number_of_generations, FREQ):
               results = toolbox.map(toolbox.algorithm, islands)
               islands = [island for island, logbook in results]
-              toolbox.migrate(islands)
+              tools.migRing(islands, 15, tools.selBest)
 
       pool.close()
       end_time = datetime.datetime.now()
