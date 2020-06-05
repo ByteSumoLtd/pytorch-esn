@@ -58,7 +58,7 @@ def evaluate(individual):
      my_dataset =  individual[15]         # for now only fn_mackey_glass is configured
 
      # construct the command line to run the individual using the cmdline fn
-     runstring = my_cmdline_tool + " --dataset " + my_dataset + " --input_size " + str(my_input_size) + " --output_size " + str(my_output_size) + " --batch_first " + str(my_batch_first) + " --hidden_size " + str(my_hidden_size) + " --num_layers " + str(my_num_layers) + " --leaking_rate " + str(my_leaking_rate) + " --spectral_radius " + str(my_spectral_radius) + " --nonlinearity " + str(my_nonlinearity) + " --w_io " + str(my_w_io) + " --w_ih_scale " + str(my_w_ih_scale) + " --lambda_reg " + str(my_lambda_reg) + " --density " + str(my_density) + " --readout_training " + str(my_readout_training) + " --output_steps " + str(my_output_steps) + " --auto true"
+     runstring = my_cmdline_tool + " --dataset " + my_dataset + " --input_size " + str(my_input_size) + " --output_size " + str(my_output_size) + " --batch_first " + str(my_batch_first) + " --hidden_size " + str(my_hidden_size) + " --num_layers " + str(my_num_layers) + " --leaking_rate " + str(my_leaking_rate) + " --spectral_radius " + str(my_spectral_radius) + " --nonlinearity " + str(my_nonlinearity) + " --w_io " + str(my_w_io) + " --w_ih_scale " + str(my_w_ih_scale) + " --lambda_reg " + str(my_lambda_reg) + " --density " + str(my_density) + " --readout_training " + str(my_readout_training) + " --output_steps " + str(my_output_steps) + " --auto true" + " --seed 10"
 
      #result = subprocess.run(runstring, stdout=subprocess.PIPE)
 
@@ -228,7 +228,7 @@ def defineSearch(
       # as the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
       k_migrants = tournement_size
       # here, we calc from total number of generations, a FREQ value that implies 5ish deme migrations per run
-      FREQ = math.ceil(number_of_generations * 0.07) + 1
+      FREQ = math.ceil(number_of_generations * 0.14) + 1
       
       # set out evolution functions. Note we defined a bespoke mutate function, as our hyperparams/genes have mixed types.
       toolbox.register("mate", tools.cxOnePoint)
