@@ -279,7 +279,7 @@ def defineSearch(
           # note:our user parameters called number_islands = number_demes
 
           # define island ring migration strategy: we only migrate unique individuals, hence "replacement=random.sample" 
-          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=random.sample)
+          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=tools.selWorst)    #replacement=random.sample)
 
           # define demes, which are sub-populations, or "islands" of size population_size. Note global population = number_islands*population_size
           demes = [toolbox.population(n=population_size) for _ in range(number_islands)]
