@@ -228,7 +228,7 @@ def defineSearch(
       # as the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
       k_migrants = tournement_size
       # here, we calc from total number of generations, a FREQ value that implies 5ish deme migrations per run
-      FREQ = math.ceil(number_of_generations * 0.14) + 1
+      FREQ = 5 #math.ceil(number_of_generations * 0.14) + 1
       
       # set out evolution functions. Note we defined a bespoke mutate function, as our hyperparams/genes have mixed types.
       toolbox.register("mate", tools.cxOnePoint)
@@ -278,8 +278,8 @@ def defineSearch(
           # based on an example herre: https://github.com/DEAP/deap/blob/master/examples/ga/onemax_multidemic.py 
           # note:our user parameters called number_islands = number_demes
 
-          # define island ring migration strategy: we only migrate unique individuals, hence "replacement=random.sample" 
-          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=tools.selWorst)    #replacement=random.sample)
+          # define island ring migration strategy: we only migrate unique individuals: 
+          toolbox.register("migrate", tools.migRing, k=k_migrants, selection=tools.selBest, replacement=tools.selWorst)    # testing an alternative idea to the   replacement=random.sample  code I've seen
 
           # define demes, which are sub-populations, or "islands" of size population_size. Note global population = number_islands*population_size
           demes = [toolbox.population(n=population_size) for _ in range(number_islands)]
@@ -288,16 +288,12 @@ def defineSearch(
           log = tools.Logbook()
           log.header = "gen", "deme", "evals", "std", "min", "avg", "max"
  
-          # configure demes: define fitness within deme, stats, hof, and logging
+          # configure demes, and fitness to run in parallel with multi-processing
           for idx, deme in enumerate(demes):
-              #for ind in deme:
-                  #ind.fitness.values = toolbox.evaluate(ind)  # no parallel run 
-
               demewide_ind = [ind for ind in deme]
               fitnesses = toolbox.map(toolbox.evaluate, demewide_ind)
               for ind, fit in zip(demewide_ind, fitnesses):
                   ind.fitness.values = fit
-
 
               #stats.update(deme, idx)
               log.record(gen=0, deme=idx, evals=len(deme), **stats.compile(deme))
@@ -305,12 +301,12 @@ def defineSearch(
               # debug / outputs to pty, can comment out
               print(log.stream)
 
-          # test: create a little function to run an individual's fitness eval, to simplify parallelism
-          #def queueEval(ind):
-          #    ind.fitness.values = toolbox.evaluate(ind)
-          #    return
+          # prior to defining the migration code, define a chain function that allows us to rebuild the many deme populations
+          def chain(*iterables): 
+              for iterable in iterables: 
+                  yield from iterable
 
-          # Run Deme based evolution
+          # Run Deme based evolution, with migrations each FREQ generations
           gen = 1
           while gen <= number_of_generations and log[-1]["min"] > 0:     # halt if MSE "min" is zero, we've solved the problem
 
@@ -319,9 +315,6 @@ def defineSearch(
                   deme[:] = algorithms.varAnd(deme, toolbox, cxpb=crossover_probability, mutpb=mutation_probability)
 
                   invalid_ind = [ind for ind in deme if not ind.fitness.valid]
-
-                  #for ind in invalid_ind:    
-                  #    ind.fitness.values = toolbox.evaluate(ind)  # original code
 
                   # the below evaluates fitness in parallel. good!
                   fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
@@ -335,7 +328,11 @@ def defineSearch(
               # On a pulse of FREQ, force ring migration of individuals across our demes/islands
               if gen % FREQ == 0:
                   toolbox.migrate(demes)
-                  print("------------------------migration across islands--------------")
+                  print("------------------------migration across islands---------------")
+                  # now the ring migration is complete, try to replace deme 0 with a new random population
+                  whitebelts = [toolbox.population(n=population_size)]
+                  demes = chain(whitebelts, enumerate(1, demes))
+
               gen += 1
 
 
