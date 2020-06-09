@@ -117,46 +117,76 @@ def defineSearch(
       # random.seed(64)
 
       # Private functions used by DEAP to run the evolution:
+
+      # MUTATE
       # define our bespoke mutate function, that needs the default params set above
       def mutate(individual):
-      # print('I am mutating!')
+          
           gene=random.randint(3, 14)  # select which parameter to mutate
-          if gene == 3:       # [3] is hidden size
+
+          if (gene == 3):       # [3] is hidden size
               # grow or shrink the resevoir on mutate
               individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
 
-          elif gene == 4:     # 4 number of layers
+          elif (gene == 4):      # 4 number of layers
               individual[1]= random.randint(search_min_num_layers, search_max_num_layers)
 
-          elif gene == 5:     # 5 nonlinearity
+          elif (gene == 5):      # 5 nonlinearity
               individual[5]=random.choice(search_nonlinearity)
 
-          elif gene == 6:     # 6 leaking_rate
+          elif (gene == 6):      # 6 leaking_rate
               individual[6]=random.uniform(search_leaking_rate_low,search_leaking_rate_high)
 
-          elif gene == 7:      # 7 spectral_radius
+          elif (gene == 7):       # 7 spectral_radius
               individual[7]=random.uniform(search_spectral_radius_low, search_spectral_radius_high)
 
-          elif gene == 8:      # 8 w_io
+          elif (gene == 8):       # 8 w_io
               individual[8]=random.choice(search_w_io)
 
-          elif gene == 9:     # 9 w_ih_scale
+          elif (gene == 9):      # 9 w_ih_scale
               individual[9]=random.uniform(search_w_ih_scale_low, search_w_ih_scale_high)
 
-          elif gene == 10:      # 10 lambda ridge regression
+          elif (gene == 10):       # 10 lambda ridge regression
               individual[10]=random.uniform(search_lambda_reg_low, search_lambda_reg_high)
 
-          elif gene == 11:      # 11 density
+          elif (gene == 11):       # 11 density
               individual[11]=random.uniform(search_density_low, search_density_high)
 
-          elif gene == 12:     # 12 readout_training
+          elif (gene == 12):      # 12 readout_training
               individual[12]=random.choice(search_readout_training)
 
-          elif gene == 13:     # 13 output_steps
+          elif (gene == 13):      # 13 output_steps
               individual[13]=random.choice(search_output_steps)
 
           return individual,
           # note the final comma, leave it in the return
+
+      # REBORN
+      def bornagain(individual):   # this create a new individual from an existing one, for use in migration experiments
+	  individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
+	  individual[1]= random.randint(search_min_num_layers, search_max_num_layers)
+	  individual[5]=random.choice(search_nonlinearity)
+	  individual[6]=random.uniform(search_leaking_rate_low,search_leaking_rate_high)
+	  individual[7]=random.uniform(search_spectral_radius_low, search_spectral_radius_high)
+	  individual[8]=random.choice(search_w_io)
+	  individual[9]=random.uniform(search_w_ih_scale_low, search_w_ih_scale_high)
+	  individual[10]=random.uniform(search_lambda_reg_low, search_lambda_reg_high)
+	  individual[11]=random.uniform(search_density_low, search_density_high)
+	  individual[12]=random.choice(search_readout_training)
+	  individual[13]=random.choice(search_output_steps)
+	  
+          return individual,
+          # note the final comma, leave it in the return 
+
+      # Custom muation for rebirth
+      def varNew(population, toolbox):
+          offspring = [toolbox.clone(ind) for ind in population]
+
+          for i in range(len(offspring)):
+              if random.random() < mutpb:
+                  offspring[i], = toolbox.mutate(offspring[i])
+                  del offspring[i].fitness.values
+      return offspring
 
       # Start configuring out DEAP search by setting up the DEAP genetic search fitness function, for ESN
       # For our problems minimimising MSE, lower fitness scores is better. Shorter runtimes also preferable to long running ones.
@@ -228,11 +258,12 @@ def defineSearch(
       # as the tournement heuristic works, why not set the migrants between islands parameter to the same dynamic value?
       k_migrants = tournement_size
       # here, we calc from total number of generations, a FREQ value that implies 5ish deme migrations per run
-      FREQ = 5 #math.ceil(number_of_generations * 0.14) + 1
+      FREQ = 2 #math.ceil(number_of_generations * 0.14) + 1
       
       # set out evolution functions. Note we defined a bespoke mutate function, as our hyperparams/genes have mixed types.
       toolbox.register("mate", tools.cxOnePoint)
       toolbox.register("mutate", mutate)
+      toolbox.register("reborn", reborn)    # experimental function to mutate entire gene into new individual
       toolbox.register("select", tools.selTournament, tournsize=tournement_size)
       toolbox.register("evaluate", evaluate)
 
@@ -301,11 +332,6 @@ def defineSearch(
               # debug / outputs to pty, can comment out
               print(log.stream)
 
-          # prior to defining the migration code, define a chain function that allows us to rebuild the many deme populations
-          def chain(*iterables): 
-              for iterable in iterables: 
-                  yield from iterable
-
           # Run Deme based evolution, with migrations each FREQ generations
           gen = 1
           while gen <= number_of_generations and log[-1]["min"] > 0:     # halt if MSE "min" is zero, we've solved the problem
@@ -329,9 +355,22 @@ def defineSearch(
               if gen % FREQ == 0:
                   toolbox.migrate(demes)
                   print("------------------------migration across islands---------------")
+
+                  # the following is experimental
                   # now the ring migration is complete, try to replace deme 0 with a new random population
-                  whitebelts = [toolbox.population(n=population_size)]
-                  demes = chain(whitebelts, enumerate(1, demes))
+                  #whitebelts = [toolbox.population(n=population_size) for _ in range(1)]
+                  #allbelts = whitebelts
+                  #thisdeme = []
+                  for idx, deme in enumerate(demes,number_islands):   # note, number_islands sets the enumeration to the last island, say, 5 for example
+                      deme[:] = toolbox.select(deme, len(deme))       # select deme 5
+                      deme[:] = toolbox.reborn(deme)        # I've changed the mutation function to muate *every* gene in the individual, if the true flag is set.
+		  
+                  invalid_ind = [ind for ind in deme if not ind.fitness.valid]
+
+                  # the below evaluates fitness in parallel. good!
+                  fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+                  for ind, fit in zip(invalid_ind, fitnesses):
+                      ind.fitness.values = fit
 
               gen += 1
 
