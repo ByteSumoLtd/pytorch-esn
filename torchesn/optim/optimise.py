@@ -36,9 +36,6 @@ def evaluate(individual):
      # make sure we are working in the examples directory, from where we can call the cmdline tools.
      os.chdir('/home/andrew/pytorch-esn/examples')
 
-
-
-
      # extract the values for the parameters from the individual chromosome
      my_input_size = individual[0]     #ok
      my_output_size = individual[1]    #ok
@@ -61,10 +58,13 @@ def evaluate(individual):
      runstring = my_cmdline_tool + " --dataset " + my_dataset + " --input_size " + str(my_input_size) + " --output_size " + str(my_output_size) + " --batch_first " + str(my_batch_first) + " --hidden_size " + str(my_hidden_size) + " --num_layers " + str(my_num_layers) + " --leaking_rate " + str(my_leaking_rate) + " --spectral_radius " + str(my_spectral_radius) + " --nonlinearity " + str(my_nonlinearity) + " --w_io " + str(my_w_io) + " --w_ih_scale " + str(my_w_ih_scale) + " --lambda_reg " + str(my_lambda_reg) + " --density " + str(my_density) + " --readout_training " + str(my_readout_training) + " --output_steps " + str(my_output_steps) + " --auto true" + " --seed 10"
 
      #result = subprocess.run(runstring, stdout=subprocess.PIPE)
+     
+     try:
+         stream = os.popen(runstring)
+         result = stream.read()
+     except: result = "123456 123456"
+     # I'm forcing the failed call to have bad fitness, and push on with the learning
 
-     stream = os.popen(runstring)
-     result = stream.read()
- 
      # add in my new function here as so
      # Test
 
