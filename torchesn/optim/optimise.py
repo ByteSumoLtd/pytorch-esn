@@ -88,7 +88,7 @@ def defineSearch(
             , search_hidden_size_low=100
             , search_hidden_size_high=1000
             , search_min_num_layers=1
-            , search_max_num_layers=2
+            , search_max_num_layers=1
             , search_nonlinearity=['tanh', 'tanh']
             , search_leaking_rate_low=0.1
             , search_leaking_rate_high=1.0
@@ -129,7 +129,7 @@ def defineSearch(
               individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
 
           elif (gene == 4):      # 4 number of layers
-              individual[1]= random.randint(search_min_num_layers, search_max_num_layers)
+              individual[4]= random.randint(search_min_num_layers, search_max_num_layers)
 
           elif (gene == 5):      # 5 nonlinearity
               individual[5]=random.choice(search_nonlinearity)
@@ -162,18 +162,20 @@ def defineSearch(
           # note the final comma, leave it in the return
 
       # REBORN
-      def bornagain(individual):   # this create a new individual from an existing one, for use in migration experiments
-	  individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
-	  individual[1]= random.randint(search_min_num_layers, search_max_num_layers)
-	  individual[5]=random.choice(search_nonlinearity)
-	  individual[6]=random.uniform(search_leaking_rate_low,search_leaking_rate_high)
-	  individual[7]=random.uniform(search_spectral_radius_low, search_spectral_radius_high)
-	  individual[8]=random.choice(search_w_io)
-	  individual[9]=random.uniform(search_w_ih_scale_low, search_w_ih_scale_high)
-	  individual[10]=random.uniform(search_lambda_reg_low, search_lambda_reg_high)
-	  individual[11]=random.uniform(search_density_low, search_density_high)
-	  individual[12]=random.choice(search_readout_training)
-	  individual[13]=random.choice(search_output_steps)
+      def reborn(population, toolbox):   # this create a new individual from an existing one, for use in migration experiment
+           
+          offspring = [toolbox.clone(ind) for ind in population]
+          individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
+          individual[4]= random.randint(search_min_num_layers, search_max_num_layers)
+          individual[5]= random.choice(search_nonlinearity)
+          individual[6]= random.uniform(search_leaking_rate_low,search_leaking_rate_high)
+          individual[7]= random.uniform(search_spectral_radius_low, search_spectral_radius_high)
+          individual[8]= random.choice(search_w_io)
+          individual[9]= random.uniform(search_w_ih_scale_low, search_w_ih_scale_high)
+          individual[10]= random.uniform(search_lambda_reg_low, search_lambda_reg_high)
+          individual[11]= random.uniform(search_density_low, search_density_high)
+          individual[12]= random.choice(search_readout_training)
+          individual[13]= random.choice(search_output_steps)
 	  
           return individual,
           # note the final comma, leave it in the return 
@@ -186,7 +188,7 @@ def defineSearch(
               if random.random() < mutpb:
                   offspring[i], = toolbox.mutate(offspring[i])
                   del offspring[i].fitness.values
-      return offspring
+          return offspring
 
       # Start configuring out DEAP search by setting up the DEAP genetic search fitness function, for ESN
       # For our problems minimimising MSE, lower fitness scores is better. Shorter runtimes also preferable to long running ones.
@@ -363,7 +365,7 @@ def defineSearch(
                   #thisdeme = []
                   for idx, deme in enumerate(demes,number_islands):   # note, number_islands sets the enumeration to the last island, say, 5 for example
                       deme[:] = toolbox.select(deme, len(deme))       # select deme 5
-                      deme[:] = toolbox.reborn(deme)        # I've changed the mutation function to muate *every* gene in the individual, if the true flag is set.
+                      deme[:] = toolbox.reborn(deme, toolbox)        # I've changed the mutation function to muate *every* gene in the individual, if the true flag is set.
 		  
                   invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
