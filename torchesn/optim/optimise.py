@@ -106,7 +106,8 @@ def defineSearch(
             , washout=500
             , cmdline_tool='fn_mackey_glass'
             , pool_size=1
-            , number_islands=0 # if we get this parameter >0 then we'll allocate the population_size to each island
+            , number_islands=0      # if we get this parameter >0 then we'll allocate the population_size to each island
+            , experiment="ring"     # this is an experimental flag, to trial a linear island migration, rather than a ring migration. see comments in line.
             , ):
 
       # Reproduciple evolution:
@@ -305,6 +306,8 @@ def defineSearch(
 
       ##################### Evolve "multidemic" Solution having subpopulations, with "ring migrations" occuring on each FREQ defined generation
       elif number_islands > 0:
+          # ISLAND SETUP AND MIGRATIONS
+
           # based on an example herre: https://github.com/DEAP/deap/blob/master/examples/ga/onemax_multidemic.py 
           # note:our user parameters called number_islands = number_demes
 
@@ -318,72 +321,84 @@ def defineSearch(
           log = tools.Logbook()
           log.header = "gen", "deme", "evals", "std", "min", "avg", "max"
  
-          # configure demes, and fitness to run in parallel with multi-processing
+          # configure demes, and fitness to run in parallel with multi-processing, run generation 0
           for idx, deme in enumerate(demes):
               demewide_ind = [ind for ind in deme]
               fitnesses = toolbox.map(toolbox.evaluate, demewide_ind)
               for ind, fit in zip(demewide_ind, fitnesses):
                   ind.fitness.values = fit
 
-              #stats.update(deme, idx)
               log.record(gen=0, deme=idx, evals=len(deme), **stats.compile(deme))
               hof.update(deme)
-              # debug / outputs to pty, can comment out
+              # og at deme level 
               print(log.stream)
 
-          # Run Deme based evolution, with migrations each FREQ generations
+          # run Deme based evolution, with migrations each FREQ generations
           gen = 1
           while gen <= number_of_generations and log[-1]["min"] > 0:     # halt if MSE "min" is zero, we've solved the problem
 
+              # for each deme, define mutation and crossover. Consider varOR ... and include reproduction?
               for idx, deme in enumerate(demes):
                   deme[:] = toolbox.select(deme, len(deme))
                   deme[:] = algorithms.varAnd(deme, toolbox, cxpb=crossover_probability, mutpb=mutation_probability)
 
+                  # each edit of an individual/population via genetic operators, invalidates fitness, so we need to reset/recalc
                   invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
-                  # the below evaluates fitness in parallel. good!
+                  # the below evaluates fitness in parallel within the deme. good! Try to set population_size as a multiple of worker_pool to get most benefit of your gpu
                   fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
                   for ind, fit in zip(invalid_ind, fitnesses):
                       ind.fitness.values = fit
 
+                  # log progress after fitness evaluations
                   log.record(gen=gen, deme=idx, evals=len(deme), **stats.compile(deme))
                   hof.update(deme)
-              print(log.stream)
+         
+                  # output progress
+                  print(log.stream)
 
+              # ISLAND MIGRATION
               # On a pulse of FREQ, force ring migration of individuals across our demes/islands
+
               if gen % FREQ == 0:
+                  # Standard migRing based Migration Strategy is called here.
                   toolbox.migrate(demes)
                   print("------------------------migration across islands---------------")
 
-                  # the following is experimental
-                  # now the ring migration is complete, try to replace deme 0 with a new random population
-                  #whitebelts = [toolbox.population(n=population_size) for _ in range(1)]
-                  #allbelts = whitebelts
-                  #thisdeme = []
-                  for idx, deme in enumerate(demes,number_islands):   # note, number_islands sets the enumeration to the last island, say, 5 for example
-                      deme[:] = toolbox.select(deme, len(deme))       # select deme 5
-                      deme[:] = varBornAgain(deme, toolbox)   # this is a custom mutation operator for a whole population, applies special reborn mutation to whole pop
+                  # Migration Strategy Experiments, optionally executed here.
+                  if experiment = "linear":
+                  
+                      # the following is experimental, to trial a "linear" migration scheme, by hacking our population
+                      # At this point, the ring migration is complete, try to replace our max deme with a new random population
+                      # doing this breaks the ring into a line, worst ind in final island disapear, but really they should disperse into the general population somehow
+                      #thisdeme = []
+                      for idx, deme in enumerate(demes,number_islands):   # note, number_islands sets the enumeration to the last island, say, 5 for example
+                          deme[:] = toolbox.select(deme, len(deme))       # select deme 5
+                          deme[:] = varBornAgain(deme, toolbox)           # this is a custom mutation operator I created for a whole population, applies special "reborn" mutation to whole pop
 		  
-                  invalid_ind = [ind for ind in deme if not ind.fitness.valid]
+                      # like before the fitness is invalidated when we mutate, so we rebuild it
+                      invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
-                  # the below evaluates fitness in parallel. good!
-                  fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
-                  for ind, fit in zip(invalid_ind, fitnesses):
-                      ind.fitness.values = fit
-
+                      # the below evaluates fitness in parallel. good!
+                      fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+                      for ind, fit in zip(invalid_ind, fitnesses):
+                          ind.fitness.values = fit
+                      # 
+                      # Review:   At this point the varBornAgain function has completely rebuilt the population of the deme with the largest id number, effectively resetting it
+                      #           and creating a place where a new population of "reborn" ind can start a fresh evolution. The idea is genetic material evolves and enters the
+                      #           the migration across islands, contributing fresh genes into the migration ring, and idea I got from reviewing ALPS (Hornby).
+                      #           ALPS sought to overcome local minima finding. This is especially important to me, as I'm running small populations, in a very big search space
+                      #           but the approach really needs more testing and measurement, and this problem might not be the best examplar to start with.
+                      #           One improvement idea - is to only reset the population once/periodically, on a multiple of FREQ, not every FREQ
               gen += 1
 
 
-      # do house keeping to close our pool, and record ending timestampt
+      # do house keeping to close our pool, and record ending timestamp
       pool.close()
       end_time = datetime.datetime.now()
 
       # debug / reporting: pass back endtime in readable format to pty, comment out if unwanted
       print(end_time)
-
-      # debug: we can pretty print hof to pty, versus outputs printed by caller if checking for a mismatch/bug
-      # pp = pprint.PrettyPrinter(indent=4)  
-      # pprint(hof[0])
 
       # assign best found individual across the hall of fame as our output, best_params.
       best_params = hof[0]
