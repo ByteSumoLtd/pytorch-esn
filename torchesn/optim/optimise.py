@@ -362,7 +362,7 @@ def defineSearch(
                   #thisdeme = []
                   for idx, deme in enumerate(demes,number_islands):   # note, number_islands sets the enumeration to the last island, say, 5 for example
                       deme[:] = toolbox.select(deme, len(deme))       # select deme 5
-                      deme[:] = toolbox.varBornAgain(deme, toolbox)   # this is a custom mutation operator for a whole population, applies special reborn mutation to whole pop
+                      deme[:] = varBornAgain(deme, toolbox)   # this is a custom mutation operator for a whole population, applies special reborn mutation to whole pop
 		  
                   invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
