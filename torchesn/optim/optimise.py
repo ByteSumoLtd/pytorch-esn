@@ -162,9 +162,8 @@ def defineSearch(
           # note the final comma, leave it in the return
 
       # REBORN
-      def reborn(population, toolbox):   # this create a new individual from an existing one, for use in migration experiment
+      def reborn(individual):   # this create a new individual from an existing one, for use in migration experiment
            
-          offspring = [toolbox.clone(ind) for ind in population]
           individual[3]= random.randint(search_hidden_size_low, search_hidden_size_high)
           individual[4]= random.randint(search_min_num_layers, search_max_num_layers)
           individual[5]= random.choice(search_nonlinearity)
@@ -181,13 +180,11 @@ def defineSearch(
           # note the final comma, leave it in the return 
 
       # Custom muation for rebirth
-      def varNew(population, toolbox):
+      def varBornAgain(population, toolbox):
           offspring = [toolbox.clone(ind) for ind in population]
-
           for i in range(len(offspring)):
-              if random.random() < mutpb:
-                  offspring[i], = toolbox.mutate(offspring[i])
-                  del offspring[i].fitness.values
+              offspring[i], = toolbox.reborn(offspring[i])
+              del offspring[i].fitness.values
           return offspring
 
       # Start configuring out DEAP search by setting up the DEAP genetic search fitness function, for ESN
@@ -365,7 +362,7 @@ def defineSearch(
                   #thisdeme = []
                   for idx, deme in enumerate(demes,number_islands):   # note, number_islands sets the enumeration to the last island, say, 5 for example
                       deme[:] = toolbox.select(deme, len(deme))       # select deme 5
-                      deme[:] = toolbox.reborn(deme, toolbox)        # I've changed the mutation function to muate *every* gene in the individual, if the true flag is set.
+                      deme[:] = toolbox.varBornAgain(deme, toolbox)   # this is a custom mutation operator for a whole population, applies special reborn mutation to whole pop
 		  
                   invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
