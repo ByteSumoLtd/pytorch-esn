@@ -336,7 +336,7 @@ def HyperSphereCell(input, hidden, leaking_rate, w_ih, w_hh, b_ih=None, hypersph
     # As a side note - this puts the ESN on the Edge of Chaos on a very wide range of spectral radius values, and generally
     # improves the ESN stability and predictive power.
     # The function to reproduce here:  #intermediate_state = self.sphere_radius * (pre_activation) / norm_v
-    preactivation = F.linear(input, w_ih, b_ih) + F.linear(hidden, w_hh)
+    pre_activation = F.linear(input, w_ih, b_ih) + F.linear(hidden, w_hh)
     norm_v = pre_activation.norm()
     hy_ = torch.tanh(norm_v)
     hy = (1 - leaking_rate) * hidden + leaking_rate * hy_

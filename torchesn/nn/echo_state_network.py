@@ -92,7 +92,7 @@ class ESN(nn.Module):
         elif nonlinearity == 'id':
             mode = 'RES_ID'
         elif nonlinearity == 'Sphere':
-            mode = 'RES_HS'
+            mode = 'RES_HSPH'
         else:
             raise ValueError("in nn, in EchoStateNetwork, there is an Unknown nonlinearity param:", nonlinearity, " '{}'".format(nonlinearity))
         self.batch_first = batch_first

@@ -53,9 +53,10 @@ def evaluate(individual):
      my_output_steps = individual[13]     #ok
      my_cmdline_tool = individual[14]     #ok
      my_dataset =  individual[15]         # for now only fn_mackey_glass is configured
+     my_sphere_radius = individual[16]    
 
      # construct the command line to run the individual using the cmdline fn
-     runstring = my_cmdline_tool + " --dataset " + my_dataset + " --input_size " + str(my_input_size) + " --output_size " + str(my_output_size) + " --batch_first " + str(my_batch_first) + " --hidden_size " + str(my_hidden_size) + " --num_layers " + str(my_num_layers) + " --leaking_rate " + str(my_leaking_rate) + " --spectral_radius " + str(my_spectral_radius) + " --nonlinearity " + str(my_nonlinearity) + " --w_io " + str(my_w_io) + " --w_ih_scale " + str(my_w_ih_scale) + " --lambda_reg " + str(my_lambda_reg) + " --density " + str(my_density) + " --readout_training " + str(my_readout_training) + " --output_steps " + str(my_output_steps) + " --auto true" + " --seed 10"
+     runstring = my_cmdline_tool + " --dataset " + my_dataset + " --input_size " + str(my_input_size) + " --output_size " + str(my_output_size) + " --batch_first " + str(my_batch_first) + " --hidden_size " + str(my_hidden_size) + " --num_layers " + str(my_num_layers) + " --leaking_rate " + str(my_leaking_rate) + " --spectral_radius " + str(my_spectral_radius) + " --hypersphere_radius " + str(my_sphere_radius) + " --nonlinearity " + str(my_nonlinearity) + " --w_io " + str(my_w_io) + " --w_ih_scale " + str(my_w_ih_scale) + " --lambda_reg " + str(my_lambda_reg) + " --density " + str(my_density) + " --readout_training " + str(my_readout_training) + " --output_steps " + str(my_output_steps) + " --auto true" + " --seed 10"
 
      #result = subprocess.run(runstring, stdout=subprocess.PIPE)
      
@@ -93,11 +94,13 @@ def defineSearch(
             , search_hidden_size_high=1000
             , search_min_num_layers=1
             , search_max_num_layers=1
-            , search_nonlinearity=['tanh', 'tanh']
+            , search_nonlinearity=['Sphere']         #['tanh', 'Sphere']
             , search_leaking_rate_low=0.1
             , search_leaking_rate_high=1.0
             , search_spectral_radius_low=0.1
             , search_spectral_radius_high=2
+            , search_sphere_radius_low = 1
+            , search_sphere_radius_high = 100
             , search_w_io=[True, False, True, True]
             , search_w_ih_scale_low=0.4
             , search_w_ih_scale_high=1.6
@@ -127,7 +130,7 @@ def defineSearch(
       # define our bespoke mutate function, that needs the default params set above
       def mutate(individual):
           
-          gene=random.randint(3, 14)  # select which parameter to mutate
+          gene=random.randint(3, 15)  # select which parameter to mutate
 
           if (gene == 3):       # [3] is hidden size
               # grow or shrink the resevoir on mutate
@@ -162,7 +165,10 @@ def defineSearch(
 
           elif (gene == 13):      # 13 output_steps
               individual[13]=random.choice(search_output_steps)
-
+          elif (gene == 15): 
+              # note the unfortunate mapping of 15 above, to 16 below. Yes that is correct.
+              individual[16]=random.uniform(search_sphere_radius_low, search_sphere_radius_high)
+          
           return individual,
           # note the final comma, leave it in the return
 
@@ -180,6 +186,7 @@ def defineSearch(
           individual[11]= random.uniform(search_density_low, search_density_high)
           individual[12]= random.choice(search_readout_training)
           individual[13]= random.choice(search_output_steps)
+          individual[16]= random.uniform(search_sphere_radius_low, search_sphere_radius_high)
 	  
           return individual,
           # note the final comma, leave it in the return 
@@ -196,11 +203,13 @@ def defineSearch(
       # For our problems minimimising MSE, lower fitness scores is better. Shorter runtimes also preferable to long running ones.
       # So we will set two fitness scores, MSE and Duration and blend with weights the search... to find good and efficient ESNs architectures.
 
-      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.010)) 
+      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.000001)) 
+      #creator.create("FitnessMin", base.Fitness, weights=(-1.0000,)) 
+
       # above we set out mse, and runtime, in that order for fitness.  
       # I'm weighting runtime duration lower, at 10%, as I'm primarily interested in best solutions, and want tie breakers prefering lowest cost.
       creator.create("Individual", list, fitness=creator.FitnessMulti)
-
+      #creator.create("Individual", list, fitness=creator.FitnessMin)
 
       # create a toolbox for deap.
       toolbox=base.Toolbox()
@@ -222,7 +231,8 @@ def defineSearch(
       toolbox.register("attr_readout_training", random.choice, search_readout_training)
       toolbox.register("attr_output_steps", random.choice, search_output_steps)
       toolbox.register("attr_cmdline_tool", random.choice, [cmdline_tool])  # note, this is just a single value, but we need it to eval the individual
-      toolbox.register("attr_dataset", random.choice, [input_file_uri])     # note, this is just a single value, but we need it to eval the individual
+      toolbox.register("attr_dataset", random.choice, [input_file_uri])     # note, this is just a single value, but we need it to eval ind
+      toolbox.register("attr_sphere_radius", random.uniform, search_sphere_radius_low, search_sphere_radius_high) 
       # This is the order in which genes will be combined to create a chromosome
       N_CYCLES=1
 
@@ -242,7 +252,8 @@ def defineSearch(
                 , toolbox.attr_readout_training #12
                 , toolbox.attr_output_steps     #13
                 , toolbox.attr_cmdline_tool     #14
-                , toolbox.attr_dataset)         #15
+                , toolbox.attr_dataset          #15
+                , toolbox.attr_sphere_radius)   #16
                 , n=N_CYCLES)
       # mental note: the above index numbers are needed to access these variables from hof, the hall_of_fame best individual evolved by our process
       # hof includes the whole population, so we set the best_params = hof[0] and then access values like this:  best_nonlinearity = best_params[5]
@@ -415,7 +426,7 @@ def defineSearch(
       # FINAL OUTPUT:
       # build a dict comprehension, to collect all the best parameters of the ESN, and settings used to find it
       # is needed to so  we can return interpretable results of evolution back to the user/caller function
-      opt_params={'run_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'attr_output_steps': best_params[13], '_cmdline_tool': cmdline_tool, 'run_start_time': start_time, 'run_end_time': end_time, 'auto_population': population_size, 'auto_islands': number_islands, 'auto_generations': number_of_generations, 'auto_crossover_probability': crossover_probability, 'auto_mutation_probability': mutation_probability}
+      opt_params={'run_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_sphere_radius':best_params[16], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'attr_output_steps': best_params[13], '_cmdline_tool': cmdline_tool, 'run_start_time': start_time, 'run_end_time': end_time, 'auto_population': population_size, 'auto_islands': number_islands, 'auto_generations': number_of_generations, 'auto_crossover_probability': crossover_probability, 'auto_mutation_probability': mutation_probability}
 
       # pass back our combined record of results to caller
       return opt_params
