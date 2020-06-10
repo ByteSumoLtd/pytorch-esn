@@ -33,7 +33,8 @@ if __name__ == "__main__":
     # Training
     trY_flat = utils.prepare_target(trY.clone(), [trX.size(0)], washout)
 
-    model = ESN(input_size, hidden_size, output_size)
+    hypersphere_radius = 23
+    model = ESN(input_size, hidden_size, output_size, hypersphere_radius)
     model.to(device)
 
     model(trX, washout, None, trY_flat)
