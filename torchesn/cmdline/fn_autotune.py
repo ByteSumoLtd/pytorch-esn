@@ -61,7 +61,8 @@ def tuneESN(dataset, input_size, output_size, batch_first, max_layers, min_layer
      pp.pprint(best_params)
 
      handy_cmd = ("# " + best_params['_cmdline_tool'] + " --hidden_size " + str(best_params['attr_hidden']) + " --input_size " + str(best_params['attr_input_size'])
-                  + " --output_size " + str(best_params['attr_output_size']) + " --spectral_radius " + str(best_params['attr_spectral_radius']) 
+                  + " --output_size " + str(best_params['attr_output_size']) + " --spectral_radius " + str(best_params['attr_spectral_radius'])
+                  + " --sphere_radius " + str(best_params['attr_sphere_radius']) 
                   + " --density " + str(best_params['attr_density']) + " --leaking_rate " + str(best_params['attr_leaking_rate'])
                   + " --lambda_reg " + str(best_params['attr_lambda_reg']) + " --nonlinearity " + str(best_params['attr_nonlinearity'])
                   + " --readout_training " + str(best_params['attr_readout_training']) + " --w_io " + str(best_params['attr_w_io'])
