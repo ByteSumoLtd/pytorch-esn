@@ -62,14 +62,18 @@ def evaluate(individual):
      try:
          stream = os.popen(runstring)
          result = stream.read()
-     except: result = "123456 123456"
+     except: result = "123456.12345 123456.12345"
      # I'm forcing the failed call to have bad fitness, and push on with the learning
 
      # add in my new function here as so
      # Test
+     try:
+         test_mse = float(result.split(" ")[0])
+         duration = float(result.split(" ")[1])
+     except:
+         test_mse = float(123456.12345)
+         duration = float(123456.12345)
 
-     test_mse = float(result.split(" ")[0])
-     duration = float(result.split(" ")[1])
      #print(runstring, " #  test_error: ", test_mse," # eval_duration: ", duration)    
      return test_mse, duration
           
@@ -192,7 +196,7 @@ def defineSearch(
       # For our problems minimimising MSE, lower fitness scores is better. Shorter runtimes also preferable to long running ones.
       # So we will set two fitness scores, MSE and Duration and blend with weights the search... to find good and efficient ESNs architectures.
 
-      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.10)) 
+      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.010)) 
       # above we set out mse, and runtime, in that order for fitness.  
       # I'm weighting runtime duration lower, at 10%, as I'm primarily interested in best solutions, and want tie breakers prefering lowest cost.
       creator.create("Individual", list, fitness=creator.FitnessMulti)
@@ -203,9 +207,9 @@ def defineSearch(
 
       # define how we map ESN parameters to genes, and define how to randomly
       # construct new ESN "individuals" representing ESNs with different hyperparameters
-      toolbox.register("attr_input_size", random.choice, [input_size])  # there is only one choice
-      toolbox.register("attr_output_size",random.choice, [output_size])  # there is only one choice
-      toolbox.register("attr_batch_first", random.choice, [batch_first])  # there is only one choice
+      toolbox.register("attr_input_size", random.choice, [input_size])     # there is only one choice, needed to eval individual
+      toolbox.register("attr_output_size",random.choice, [output_size])    # there is only one choice, needed to eval individual
+      toolbox.register("attr_batch_first", random.choice, [batch_first])   # there is only one choice, needed to eval individual
       toolbox.register("attr_hidden", random.randint, search_hidden_size_low, search_hidden_size_high)
       toolbox.register("attr_num_layers", random.randint, search_min_num_layers, search_max_num_layers)
       toolbox.register("attr_nonlinearity", random.choice, search_nonlinearity)
@@ -366,7 +370,7 @@ def defineSearch(
                   print("------------------------migration across islands---------------")
 
                   # Migration Strategy Experiments, optionally executed here.
-                  if experiment = "linear":
+                  if experiment == "linear":
                   
                       # the following is experimental, to trial a "linear" migration scheme, by hacking our population
                       # At this point, the ring migration is complete, try to replace our max deme with a new random population
@@ -376,13 +380,14 @@ def defineSearch(
                           deme[:] = toolbox.select(deme, len(deme))       # select deme 5
                           deme[:] = varBornAgain(deme, toolbox)           # this is a custom mutation operator I created for a whole population, applies special "reborn" mutation to whole pop
 		  
-                      # like before the fitness is invalidated when we mutate, so we rebuild it
-                      invalid_ind = [ind for ind in deme if not ind.fitness.valid]
+                          # like before the fitness is invalidated when we mutate, so we rebuild it
+                          invalid_ind = [ind for ind in deme if not ind.fitness.valid]
 
                       # the below evaluates fitness in parallel. good!
                       fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
                       for ind, fit in zip(invalid_ind, fitnesses):
                           ind.fitness.values = fit
+                          
                       # 
                       # Review:   At this point the varBornAgain function has completely rebuilt the population of the deme with the largest id number, effectively resetting it
                       #           and creating a place where a new population of "reborn" ind can start a fresh evolution. The idea is genetic material evolves and enters the
@@ -390,6 +395,8 @@ def defineSearch(
                       #           ALPS sought to overcome local minima finding. This is especially important to me, as I'm running small populations, in a very big search space
                       #           but the approach really needs more testing and measurement, and this problem might not be the best examplar to start with.
                       #           One improvement idea - is to only reset the population once/periodically, on a multiple of FREQ, not every FREQ
+
+              # this generation is done, increment and restart next 
               gen += 1
 
 
@@ -404,7 +411,8 @@ def defineSearch(
       best_params = hof[0]
       best_fitness = hof[0].fitness
 
-      # create final output:
+
+      # FINAL OUTPUT:
       # build a dict comprehension, to collect all the best parameters of the ESN, and settings used to find it
       # is needed to so  we can return interpretable results of evolution back to the user/caller function
       opt_params={'run_training_loss': best_fitness ,'attr_input_size': best_params[0], 'attr_output_size': best_params[1], 'attr_batch_first': best_params[2], 'attr_hidden': best_params[3], 'attr_num_layers': best_params[4], 'attr_nonlinearity': best_params[5], 'attr_leaking_rate': best_params[6], 'attr_spectral_radius': best_params[7], 'attr_w_io': best_params[8], 'attr_w_ih_scale': best_params[9], 'attr_density': best_params[10],'attr_lambda_reg': best_params[11], 'attr_readout_training': best_params[12], 'attr_output_steps': best_params[13], '_cmdline_tool': cmdline_tool, 'run_start_time': start_time, 'run_end_time': end_time, 'auto_population': population_size, 'auto_islands': number_islands, 'auto_generations': number_of_generations, 'auto_crossover_probability': crossover_probability, 'auto_mutation_probability': mutation_probability}
