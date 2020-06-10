@@ -20,7 +20,7 @@ class Reservoir(nn.Module):
 
     def __init__(self, mode, input_size, hidden_size, num_layers, leaking_rate,
                  spectral_radius, w_ih_scale,
-                 density, bias=True, batch_first=False):
+                 density, bias=True, batch_first=False, hypersphere_radius=35):
         super(Reservoir, self).__init__()
         self.mode = mode
         self.input_size = input_size
@@ -32,6 +32,7 @@ class Reservoir(nn.Module):
         self.density = density
         self.bias = bias
         self.batch_first = batch_first
+        self.hypersphere_radius = hypersphere_radius
 
         self._all_weights = []
         for layer in range(num_layers):
@@ -156,7 +157,8 @@ class Reservoir(nn.Module):
             train=self.training,
             variable_length=is_packed,
             flat_weight=flat_weight,
-            leaking_rate=self.leaking_rate
+            leaking_rate=self.leaking_rate,
+            hypersphere_radius=self.hypersphere_radius
         )
         output, hidden = func(input, self.all_weights, hx, batch_sizes)
         if is_packed:
@@ -200,14 +202,16 @@ class Reservoir(nn.Module):
 def AutogradReservoir(mode, input_size, hidden_size, num_layers=1,
                       batch_first=False, train=True,
                       batch_sizes=None, variable_length=False, flat_weight=None,
-                      leaking_rate=1):
+                      leaking_rate=1, hypersphere_radius=35):
     if mode == 'RES_TANH':
         cell = ResTanhCell
+    elif mode == 'RES_HSPH':
+        cell = HyperSphereCell
     elif mode == 'RES_RELU':
         cell = ResReLUCell
     elif mode == 'RES_ID':
         cell = ResIdCell
-
+    
     if variable_length:
         layer = (VariableRecurrent(cell, leaking_rate),)
     else:
@@ -321,6 +325,23 @@ def ResTanhCell(input, hidden, leaking_rate, w_ih, w_hh, b_ih=None):
     hy_ = torch.tanh(F.linear(input, w_ih, b_ih) + F.linear(hidden, w_hh))
     hy = (1 - leaking_rate) * hidden + leaking_rate * hy_
     return hy
+
+def HyperSphereCell(input, hidden, leaking_rate, w_ih, w_hh, b_ih=None, hypersphere_radius=35):
+    # Here I'm defining a new cell, that normalizes pre-activation weights, by placing them
+    # on the hypersphere.
+    # this is based on the paper here: https://arxiv.org/abs/1903.11691
+    # and on my other implementation found here: https://github.com/ByteSumoLtd/pyESN/blob/master/pyESN.py
+    #
+    # This cell requires a hypersphere radius to be set as a parameter, so first lets code it then map in the param
+    # As a side note - this puts the ESN on the Edge of Chaos on a very wide range of spectral radius values, and generally
+    # improves the ESN stability and predictive power.
+    # The function to reproduce here:  #intermediate_state = self.sphere_radius * (pre_activation) / norm_v
+    preactivation = F.linear(input, w_ih, b_ih) + F.linear(hidden, w_hh)
+    norm_v = pre_activation.norm()
+    hy_ = torch.tanh(norm_v)
+    hy = (1 - leaking_rate) * hidden + leaking_rate * hy_
+    return hy
+
 
 
 def ResReLUCell(input, hidden, leaking_rate, w_ih, w_hh, b_ih=None):
