@@ -32,7 +32,8 @@ import click
 @click.option("--batch_first", default=False, type=click.BOOL, help="If True the input and output tensors are provided as (batch, seq, feature). Default: False")
 @click.option("--leaking_rate", default=1, type=float,  help="the leaking rate of the ESN: default 1")
 @click.option("--spectral_radius", default=0.9, type=float, help="the spectral radius to apply to the ESN")
-@click.option("--nonlinearity", default='tanh', help="non-linearity to use. ['tanh'|'relu'|'id']: default: 'tanh'")
+@click.option("--hypersphere_radius", default=3, type=float, help="the hypersphere radius to normalise the ESN activations")
+@click.option("--nonlinearity", default='tanh', help="non-linearity to use. ['tanh'|'sphere'|'relu'|'id']: default: 'tanh'")
 @click.option("--w_io", default=True, type=click.BOOL, help="teacher forcing is True/False, it included outputs back into inputs")
 @click.option("--w_ih_scale", default=1, type=float, help="scaling factor to apply to teacher forcing inputs: default 1")
 @click.option("--lambda_reg", default=0.6, type=float, help="ridge regression's shrinkage parameter. Default: 1")
@@ -46,7 +47,7 @@ import click
 
 # ################# end of command line aurguments to this script
 
-def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, leaking_rate, spectral_radius, nonlinearity, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, seed, device_mode, header, dataset, auto):
+def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, leaking_rate, spectral_radius, hypersphere_radius, nonlinearity, w_io, w_ih_scale, lambda_reg, density, readout_training, output_steps, seed, device_mode, header, dataset, auto):
      device = torch.device('cuda')
      dtype = torch.double
      torch.set_default_dtype(dtype)
@@ -108,13 +109,14 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
          , nonlinearity
          , batch_first 
          , leaking_rate 
-         , spectral_radius 
+         , spectral_radius
          , w_io 
          , w_ih_scale 
          , lambda_reg 
          , density 
          , readout_training 
          , output_steps 
+         , hypersphere_radius
          )
 
      model.to(device)
