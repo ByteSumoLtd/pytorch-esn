@@ -73,7 +73,7 @@ class ESN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1,
                  nonlinearity='tanh', batch_first=False, leaking_rate=1,
                  spectral_radius=0.9, w_ih_scale=1, lambda_reg=0, density=1,
-                 w_io=False, readout_training='svd', output_steps='all'):
+                 w_io=False, readout_training='svd', output_steps='all', hypersphere_radius=35):
         super(ESN, self).__init__()
 
         self.input_size = input_size
@@ -91,11 +91,14 @@ class ESN(nn.Module):
             mode = 'RES_RELU'
         elif nonlinearity == 'id':
             mode = 'RES_ID'
+        elif nonlinearity == 'Sphere':
+            mode = 'RES_HS'
         else:
             raise ValueError("in nn, in EchoStateNetwork, there is an Unknown nonlinearity param:", nonlinearity, " '{}'".format(nonlinearity))
         self.batch_first = batch_first
         self.leaking_rate = leaking_rate
         self.spectral_radius = spectral_radius
+        self.hypersphere_radius = hypersphere_radius
         if type(w_ih_scale) != torch.Tensor:
             self.w_ih_scale = torch.ones(input_size + 1)
             self.w_ih_scale *= w_ih_scale
@@ -114,7 +117,7 @@ class ESN(nn.Module):
         self.reservoir = Reservoir(mode, input_size, hidden_size, num_layers,
                                    leaking_rate, spectral_radius,
                                    self.w_ih_scale, density,
-                                   batch_first=batch_first)
+                                   batch_first=batch_first, hypersphere_radius=hypersphere_radius)
 
         if w_io:
             self.readout = nn.Linear(input_size + hidden_size * num_layers,
