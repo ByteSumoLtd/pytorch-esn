@@ -85,18 +85,19 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
      rowcount = shp[0]   # the number of rows in the file
      colcount = shp[1]   # the number of columns in the file
 
-     input_size = colcount-1
-
+     # here we accept the output size (the targets to learn, every thing else is input!
+     input_size = colcount-output_size
+     
      # take all columns not in the last one as X inputs 
      X_data = np.expand_dims(data[:, :input_size], axis=1)
 
      # take the last column as the Y target to predict
-     Y_data = np.expand_dims(data[:, [colcount]], axis=1)
+     Y_data = np.expand_dims(data[:, input_size:colcount], axis=1)
 
      X_data = torch.from_numpy(X_data).to(device)
      Y_data = torch.from_numpy(Y_data).to(device)
 
-     train_test_split = ceil(rowcount/2)
+     train_test_split = math.ceil(rowcount/2)
 
      trX = X_data[:train_test_split]
      trY = Y_data[:train_test_split]
@@ -118,7 +119,7 @@ def executeESN(input_size, output_size, hidden_size, num_layers, batch_first, le
      start = time.time()
 
      # call the configured model
-     model = ESN(            # input_size
+     model = ESN(input_size
          , hidden_size
          , output_size
          , num_layers 

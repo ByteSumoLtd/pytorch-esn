@@ -42,9 +42,9 @@ import click
 @click.option("--generations", default=20, help="the number of generations to evolve the population, longer may find better: default 20")
 @click.option("--worker_pool", default=1, type=int, help="the number of concurrent workers in the pool for the evolution. Ensure you do not max your GPU memory out!: default 1")
 @click.option("--header", type = click.BOOL, default=False, help="a switch to print the header record to interpret the results. Default: False")
+@click.option("--func", default="fn_cotrend", help="this indicates which commandline fn to call to execute the ESN runs. Default: fn_cotrend")
 
-
-def tuneESN(dataset, input_size, output_size, batch_first, max_layers, min_layers, hidden_size_low, hidden_size_high, population, generations, header, worker_pool, number_islands):
+def tuneESN(dataset, input_size, output_size, batch_first, max_layers, min_layers, hidden_size_low, hidden_size_high, population, generations, header, worker_pool, number_islands, func):
      #     Above we created just enough commandline parameters to run the autotuning. 
      #     I have set smart search defaults for all the ESN search hyperparameters.
      #     Due to cost implications, I'm leaving in hidden_low, hidden_high, population size, and number of generations for you to override.
@@ -53,7 +53,7 @@ def tuneESN(dataset, input_size, output_size, batch_first, max_layers, min_layer
                                , population_size=population, number_of_generations=generations
                                , search_max_num_layers=max_layers, search_min_num_layers=min_layers
                                , search_hidden_size_low=hidden_size_low, search_hidden_size_high=hidden_size_low
-                               , pool_size=worker_pool, number_islands=number_islands)
+                               , pool_size=worker_pool, number_islands=number_islands, cmdline_tool=func)
 
 
      # pretty print the final data frrom the autotuning run

@@ -196,7 +196,7 @@ def defineSearch(
       # For our problems minimimising MSE, lower fitness scores is better. Shorter runtimes also preferable to long running ones.
       # So we will set two fitness scores, MSE and Duration and blend with weights the search... to find good and efficient ESNs architectures.
 
-      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.010)) 
+      creator.create("FitnessMulti", base.Fitness, weights=(-1.0000, -0.000010)) 
       # above we set out mse, and runtime, in that order for fitness.  
       # I'm weighting runtime duration lower, at 10%, as I'm primarily interested in best solutions, and want tie breakers prefering lowest cost.
       creator.create("Individual", list, fitness=creator.FitnessMulti)
