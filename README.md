@@ -11,7 +11,7 @@ This https://github.com/ByteSumoLtd/pytorch-esn fork of Stefano's core library, 
 - ability to manually set a seed in the commandline tool, for reproducible results
 - some hacky helpers to reinstall the modules when in active development
 - inclusion of torchesn/optim and an optimise module that configures DEAP to search for good ESN hyperparamets. Opinionated but with good defaults.
-- inclusion of fn_autotune commandline tool, that automates discovery of good hyper-parameters for your problem, automating the whole ESN training process. The specific cmdline too to call is parameterised.
+- inclusion of fn_autotune commandline tool, that automates discovery of good hyper-parameters for your problem, automating the whole ESN training process. The specific cmdline tool to call is parameterised to optimise many different kinds of solutions.
 - inclusion of multiprocessing as a parallisation mechanism to accelerate genetic search for good models on a single GPU, and parameters to simply set worker number
 - inclusion of a number_islands parameter, to automate deploying multidemic solutions in Deap using ring emmigration, to explore preventing premature convergence. Of note - the multi island solution includes corrected coded improving common examples found online, to also leverage parallelizing fitness evaluations to speed up the search 
 - inclusion of fn_cotrend commandline, a more dynamic timeseries ESN function supporting multiple input timeseries features, to predict single outputs. 
